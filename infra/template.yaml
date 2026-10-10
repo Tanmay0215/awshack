@@ -15,7 +15,7 @@ Parameters:
     Description: Web (Caddy + static frontend) image on Docker Hub (public repo).
   DomainName:
     Type: String
-    Default: sortline.dsabuddy.com
+    Default: pixelapp.tech
     Description: Public hostname; point its DNS A record at the ElasticIp output.
   ModelKey:
     Type: String

@@ -12,7 +12,6 @@ RESULTS_BUCKET="$(stack_output ResultsBucketName)"
 TABLE="$(stack_output ScansTableName)"
 API_LOG="$(stack_output ApiLogGroupName)"
 WEB_LOG="$(stack_output WebLogGroupName)"
-DOMAIN="$(stack_output SiteUrl)"; DOMAIN="${DOMAIN#https://}"
 MODEL_KEY="${MODEL_KEY:-models/best.pt}"
 
 CMDS=$(cat <<SCRIPT
@@ -27,7 +26,7 @@ docker run -d --name api --network sortline --restart always \
   -e AWS_REGION=$REGION -e AWS_DEFAULT_REGION=$REGION $API_IMAGE
 docker run -d --name web --network sortline --restart always \
   --log-driver awslogs --log-opt awslogs-region=$REGION --log-opt awslogs-group=$WEB_LOG --log-opt awslogs-stream=web \
-  -p 80:80 -p 443:443 -p 443:443/udp -e SITE_ADDRESS=$DOMAIN \
+  -p 80:80 -p 443:443 -p 443:443/udp -e SITE_ADDRESS='$SITE_ADDRESS' \
   -v caddy_data:/data -v caddy_config:/config $WEB_IMAGE
 docker image prune -af
 docker builder prune -af

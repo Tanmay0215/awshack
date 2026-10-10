@@ -2,7 +2,7 @@
 
 After this guide you have Sortline running at your own HTTPS domain on a single EC2 instance. For how the pieces fit together, see [`AWS.md`](AWS.md).
 
-Current deployment: stack `waste-detect`, Region `ap-southeast-2`, Elastic IP `13.55.1.7`, domain `sortline.dsabuddy.com`, images `tanman0215/waste-detect-api` and `tanman0215/sortline-web` on Docker Hub.
+Current deployment: stack `waste-detect`, Region `ap-southeast-2`, Elastic IP `13.55.1.7`, domain `pixelapp.tech` (+ `www.pixelapp.tech`; `sortline.dsabuddy.com` still served, set via `SITE_ADDRESS` in `infra/scripts/env-config`), images `tanman0215/waste-detect-api` and `tanman0215/sortline-web` on Docker Hub.
 
 ## 1. Prerequisites
 
@@ -100,7 +100,7 @@ aws cloudformation describe-stacks --stack-name waste-detect --region ap-southea
 ## 6. Smoke tests
 
 ```bash
-SITE=https://sortline.dsabuddy.com
+SITE=https://pixelapp.tech
 curl -s $SITE/api/health                                    # model_loaded should be true
 curl -s -F file=@sample.jpg "$SITE/api/detect?conf=0.4" | head -c 400
 curl -s -F file=@sample.jpg "$SITE/api/detect-frame?conf=0.4&imgsz=416"

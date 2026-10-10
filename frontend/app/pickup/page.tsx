@@ -5,6 +5,7 @@ import { resizeImage, validateFile } from '@/lib/api';
 import { Pickup, createPickup, listPickups, locate, remember, remembered } from '@/lib/civic';
 import { fmtKg } from '@/lib/guidance';
 import MapView from '@/app/_components/MapView';
+import PlaceSearch from '@/app/_components/PlaceSearch';
 import { Alert, Box, Chips, PhotoField, Shell, btn, btnAlt, field, labelCls } from '@/app/_components/ui';
 
 const KEY = 'sortline-my-pickups';
@@ -83,7 +84,7 @@ export default function PickupPage() {
             </div>
             <div>
               <label htmlFor="address" className={labelCls}>Address / landmark</label>
-              <input id="address" maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} className={`mt-1 ${field}`} />
+              <PlaceSearch id="address" value={address} onChange={setAddress} near={pos} onPick={(p) => setPos({ lat: p.lat, lng: p.lng })} />
             </div>
             <div>
               <label htmlFor="weight" className={labelCls}>Approx. weight in kg (optional, improves the estimate)</label>
@@ -93,7 +94,7 @@ export default function PickupPage() {
               <span className={labelCls}>Pickup location</span>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <button type="button" onClick={useMyLocation} className={btnAlt}>Use my location</button>
-                <span className="text-xs">{pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'or tap the map'}</span>
+                <span className="text-xs">{pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'or pick an address above, or tap the map'}</span>
               </div>
               <MapView points={[]} pick={pos} onPick={setPos} className="mt-2 h-56" />
             </div>

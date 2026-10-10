@@ -3,6 +3,8 @@ export REGION="${REGION:-ap-southeast-2}"
 export STACK_NAME="${STACK_NAME:-waste-detect}"
 export AWS_REGION="$REGION"
 export AWS_DEFAULT_REGION="$REGION"
+# Caddy site addresses (comma-separated). Overrides the stack's DomainName, which only applies at first boot.
+export SITE_ADDRESS="${SITE_ADDRESS:-pixelapp.tech, www.pixelapp.tech, sortline.dsabuddy.com}"
 
 # stack_output <OutputKey> -> prints value
 stack_output() {

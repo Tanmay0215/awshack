@@ -4,6 +4,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# Browser key for the Maps JavaScript API (public by design; restrict it by HTTP referrer in Google Cloud).
+ARG NEXT_PUBLIC_GOOGLE_MAPS_KEY=""
+ENV NEXT_PUBLIC_GOOGLE_MAPS_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_KEY
 RUN npm run build
 
 FROM caddy:2-alpine

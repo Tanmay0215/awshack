@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { resizeImage, validateFile } from '@/lib/api';
 import { CivicSummary, Report, ago, createReport, getSummary, listReports, locate } from '@/lib/civic';
 import MapView, { MapPoint } from '@/app/_components/MapView';
+import PlaceSearch from '@/app/_components/PlaceSearch';
 import { Alert, Box, Chips, PhotoField, Shell, Stat, btn, btnAlt, field, labelCls } from '@/app/_components/ui';
 
 const statusColor = (r: Report) => (r.status === 'resolved' ? '#4d8f2a' : r.escalated ? '#b4491f' : '#e0a21a');
@@ -39,6 +40,7 @@ export default function ReportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [note, setNote] = useState('');
+  const [place, setPlace] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Report | null>(null);
@@ -67,7 +69,7 @@ export default function ReportPage() {
     setBusy(true); setError(null);
     try {
       const { report } = await createReport(await resizeImage(file), pos.lat, pos.lng, note);
-      setCreated(report); setFile(null); setNote(''); setPos(null);
+      setCreated(report); setFile(null); setNote(''); setPos(null); setPlace('');
       load();
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not send the report.'); }
     finally { setBusy(false); }
@@ -92,8 +94,11 @@ export default function ReportPage() {
               <span className={labelCls}>Location</span>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <button type="button" onClick={useMyLocation} className={btnAlt}>Use my location</button>
-                <span className="text-xs">{pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'or tap the map'}</span>
+                <span className="text-xs">{pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'or search / tap the map'}</span>
               </div>
+              <label htmlFor="place" className="sr-only">Search a place</label>
+              <PlaceSearch id="place" value={place} onChange={setPlace} near={pos} placeholder="Search a street or landmark"
+                onPick={(p) => setPos({ lat: p.lat, lng: p.lng })} />
             </div>
             <div>
               <label htmlFor="note" className={labelCls}>Note (optional)</label>
