@@ -150,7 +150,6 @@ function ScanCard({ s }: { s: Scan }) {
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-wider">
         <time dateTime={s.ts}>{new Date(s.ts).toLocaleString()}</time>
-        <span className="font-bold">{s.line}</span>
         <span>{s.total} item{s.total === 1 ? '' : 's'}</span>
         {s.demo && <span className="border border-ink bg-lime px-1.5 font-bold">demo</span>}
       </div>
@@ -165,13 +164,11 @@ function ScanCard({ s }: { s: Scan }) {
 }
 
 export default function Dashboard() {
-  const [line, setLine] = useState('');
   const [days, setDays] = useState(7);
   const [stats, setStats] = useState<Stats | null>(null);
   const [scans, setScans] = useState<Scan[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<Date | null>(null);
-  const [lines, setLines] = useState<string[]>([]);
   const ctrl = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -179,15 +176,15 @@ export default function Dashboard() {
     const ac = new AbortController();
     ctrl.current = ac;
     try {
-      const [st, sc] = await Promise.all([getStats(days, line, ac.signal), getScans(line, 24, ac.signal)]);
+      const [st, sc] = await Promise.all([getStats(days, ac.signal), getScans(24, ac.signal)]);
       if (ac.signal.aborted) return;
-      setStats(st); setScans(sc.scans); setLines(st.lines ?? []);
+      setStats(st); setScans(sc.scans);
       setError(null); setUpdated(new Date());
     } catch (e) {
       if (ac.signal.aborted) return;
       setError(e instanceof Error ? e.message : 'Failed to load dashboard.');
     }
-  }, [days, line]);
+  }, [days]);
 
   useEffect(() => {
     load();
@@ -208,17 +205,11 @@ export default function Dashboard() {
         <nav aria-label="Primary" className="flex gap-2 text-xs font-bold uppercase tracking-widest">
           <Link href="/" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Scan</Link>
           <Link href="/dashboard" aria-current="page" className="border-2 border-ink bg-ink px-3 py-1 text-lime">Dashboard</Link>
+          <Link href="/live" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Live</Link>
         </nav>
       </header>
 
       <div className="mb-6 flex flex-wrap items-end gap-4">
-        <div>
-          <label htmlFor="line" className="block text-xs font-bold uppercase tracking-widest">Line</label>
-          <select id="line" value={line} onChange={(e) => setLine(e.target.value)} className="mt-1 border-2 border-ink bg-sheet p-2 text-sm">
-            <option value="">All lines</option>
-            {lines.map((l) => <option key={l} value={l}>{l}</option>)}
-          </select>
-        </div>
         <div role="group" aria-label="Range">
           <span className="block text-xs font-bold uppercase tracking-widest">Range</span>
           <div className="mt-1 flex">

@@ -8,7 +8,7 @@ uv sync
 MODEL_PATH=/path/to/best.pt uv run uvicorn app.main:app --port 8000
 
 curl localhost:8000/health
-curl -F file=@image.jpg "localhost:8000/detect?conf=0.4&line=line-1"
+curl -F file=@image.jpg "localhost:8000/detect?conf=0.4"
 ```
 
 ## Docker
@@ -34,16 +34,17 @@ When persistence is off, `/detect` still works, `/stats` returns zeros and `/sca
 
 ## Endpoints
 - `GET /health`
-- `POST /detect?conf=0.4&line=line-1` - multipart `file`. Returns detections, counts, annotated `image`, `inference_ms`, plus `scan_id`. `line` matches `[A-Za-z0-9_-]{1,32}`. Saving to S3/DynamoDB is best-effort and never fails the request.
+- `POST /detect?conf=0.4` - multipart `file`. Returns detections, counts, annotated `image`, `inference_ms`, plus `scan_id`. An optional `line` query param (`[A-Za-z0-9_-]{1,32}`, default `line-1`) is still accepted but the UI no longer uses it. Saving to S3/DynamoDB is best-effort and never fails the request.
+- `POST /detect-frame?conf=0.4&imgsz=416` - small JPEG (max 1 MB) for live mode. Returns detections, counts, `inference_ms`, `width`, `height` only; nothing is saved. Returns 429 immediately if the model is busy. See `LIVE.md`.
 - `GET /stats?days=7&line=` - (days 1-90) totals, `by_class`, `by_day`, `by_hour` (UTC), `top_class`, `est_weight_kg`, `est_value_usd` (rough per-class constants in `app/store.py`), `purity_pct`.
 - `GET /scans?limit=24&line=` - (1-100) newest first with 1h presigned `original_url` / `annotated_url`.
 
-CORS allows GET, POST, OPTIONS and the `x-amz-content-sha256` header.
+CORS allows GET, POST and OPTIONS. In production the site and API are same-origin through Caddy, so CORS is only needed for local dev.
 
 ## Seeding demo data
 ```bash
 export RESULTS_BUCKET=... SCANS_TABLE=... AWS_REGION=ap-southeast-2
-uv run python scripts/seed.py --count 300 --days 7   # backdated, demo=true, line-1..line-3
+uv run python scripts/seed.py --count 300 --days 7   # backdated, demo=true (spread over line-1..line-3 internally)
 uv run python scripts/seed.py --clear-demo           # remove seeded items
 ```
 Optional `--image a.jpg b.jpg` to use your own placeholder images (uploaded to `scans/demo/`).

@@ -137,6 +137,55 @@ async def _persist_async(scan_id, line, data, img, result):
     await asyncio.to_thread(_persist, scan_id, line, data, img, result)
 
 
+MAX_FRAME_BYTES = 1024 * 1024
+
+
+def _run_frame(model, lock, img: np.ndarray, conf: float, imgsz: int):
+    """Non-blocking inference for live mode. Returns None if the model is busy."""
+    if not lock.acquire(blocking=False):
+        return None
+    try:
+        t0 = time.perf_counter()
+        res = model.predict(img, conf=conf, imgsz=imgsz, device="cpu", verbose=False)[0]
+        ms = int((time.perf_counter() - t0) * 1000)
+    finally:
+        lock.release()
+    detections, counts = [], {}
+    for b in res.boxes:
+        cls = res.names[int(b.cls[0])]
+        x1, y1, x2, y2 = (round(float(v), 1) for v in b.xyxy[0].tolist())
+        detections.append({"class": cls, "confidence": round(float(b.conf[0]), 4), "box": [x1, y1, x2, y2]})
+        counts[cls] = counts.get(cls, 0) + 1
+    return {"detections": detections, "counts": counts, "inference_ms": ms}
+
+
+@app.post("/detect-frame")
+async def detect_frame(
+    file: UploadFile = File(...),
+    conf: float = Query(0.4, ge=0.05, le=1.0),
+    imgsz: int = Query(416, ge=160, le=1280),
+):
+    """Lightweight live-mode endpoint: no annotated image, no persistence; 429 if the model is busy."""
+    if app.state.model is None:
+        raise HTTPException(503, "Model not loaded")
+    data = await file.read(MAX_FRAME_BYTES + 1)
+    if len(data) > MAX_FRAME_BYTES:
+        raise HTTPException(413, "Frame exceeds 1MB limit")
+    if not data or not _sniff(data):
+        raise HTTPException(415, "Only jpg, png or webp images are supported")
+    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(400, "Could not decode image")
+    if img.shape[0] * img.shape[1] > MAX_PIXELS:
+        raise HTTPException(413, "Image dimensions too large")
+    imgsz = max(32, imgsz // 32 * 32)
+    result = await asyncio.to_thread(_run_frame, app.state.model, app.state.lock, img, conf, imgsz)
+    if result is None:
+        raise HTTPException(429, "Model busy", headers={"Retry-After": "1"})
+    result["width"], result["height"] = int(img.shape[1]), int(img.shape[0])
+    return result
+
+
 @app.get("/stats")
 async def stats(days: int = Query(7, ge=1, le=90), line: str | None = Query(None)):
     line = line or None

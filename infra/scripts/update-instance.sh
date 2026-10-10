@@ -10,6 +10,8 @@ IID="$(stack_output InstanceId)"
 MODEL_BUCKET="$(stack_output ModelBucketName)"
 RESULTS_BUCKET="$(stack_output ResultsBucketName)"
 TABLE="$(stack_output ScansTableName)"
+API_LOG="$(stack_output ApiLogGroupName)"
+WEB_LOG="$(stack_output WebLogGroupName)"
 DOMAIN="$(stack_output SiteUrl)"; DOMAIN="${DOMAIN#https://}"
 MODEL_KEY="${MODEL_KEY:-models/best.pt}"
 
@@ -20,12 +22,15 @@ docker pull $API_IMAGE
 docker pull $WEB_IMAGE
 docker rm -f api web backend 2>/dev/null || true
 docker run -d --name api --network sortline --restart always \
+  --log-driver awslogs --log-opt awslogs-region=$REGION --log-opt awslogs-group=$API_LOG --log-opt awslogs-stream=api \
   -e MODEL_S3_URI=s3://$MODEL_BUCKET/$MODEL_KEY -e RESULTS_BUCKET=$RESULTS_BUCKET -e SCANS_TABLE=$TABLE \
   -e AWS_REGION=$REGION -e AWS_DEFAULT_REGION=$REGION $API_IMAGE
 docker run -d --name web --network sortline --restart always \
+  --log-driver awslogs --log-opt awslogs-region=$REGION --log-opt awslogs-group=$WEB_LOG --log-opt awslogs-stream=web \
   -p 80:80 -p 443:443 -p 443:443/udp -e SITE_ADDRESS=$DOMAIN \
   -v caddy_data:/data -v caddy_config:/config $WEB_IMAGE
-docker image prune -f
+docker image prune -af
+docker builder prune -af
 docker ps
 SCRIPT
 )

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CLASSES, DetectResult, LINES, detect, health, resizeImage, validateFile } from '@/lib/api';
+import { CLASSES, DetectResult, detect, health, resizeImage, validateFile } from '@/lib/api';
 
 const COLORS: Record<string, string> = {
   BIODEGRADABLE: '#4d8f2a',
@@ -21,7 +21,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DetectResult | null>(null);
-  const [line, setLine] = useState(LINES[0]);
   const [drag, setDrag] = useState(false);
   const [online, setOnline] = useState<boolean | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -45,7 +44,7 @@ export default function Home() {
   async function run() {
     if (!file) return;
     setLoading(true); setError(null);
-    try { const r = await detect(await resizeImage(file), conf, line); setSelected([]); setResult(r); }
+    try { const r = await detect(await resizeImage(file), conf); setSelected([]); setResult(r); }
     catch (e) { setError(e instanceof Error ? e.message : 'Detection failed.'); }
     finally { setLoading(false); }
   }
@@ -65,6 +64,7 @@ export default function Home() {
         <nav aria-label="Primary" className="flex gap-2 text-xs font-bold uppercase tracking-widest">
           <Link href="/" aria-current="page" className="border-2 border-ink bg-ink px-3 py-1 text-lime">Scan</Link>
           <Link href="/dashboard" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Dashboard</Link>
+          <Link href="/live" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Live</Link>
         </nav>
         <p className="flex items-center gap-2 text-xs uppercase tracking-widest" role="status">
           <span className={`inline-block h-3 w-3 ${online === null ? 'bg-ink/30' : online ? 'bg-lime border border-ink' : 'bg-rust'}`} aria-hidden />
@@ -107,13 +107,6 @@ export default function Home() {
             </label>
             <input id="conf" type="range" min={5} max={100} step={5} value={conf}
               onChange={(e) => setConf(Number(e.target.value))} className="mt-2 w-full" />
-          </div>
-          <div>
-            <label htmlFor="line" className="block text-xs font-bold uppercase tracking-widest">Line</label>
-            <select id="line" value={line} onChange={(e) => setLine(e.target.value)}
-              className="mt-2 w-full border-2 border-ink bg-sheet p-2 text-sm">
-              {LINES.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
           </div>
           <button type="button" onClick={run} disabled={!file || loading}
             className="bg-ink px-4 py-3 font-display text-2xl font-bold uppercase tracking-wider text-lime transition hover:bg-moss disabled:cursor-not-allowed disabled:opacity-40">

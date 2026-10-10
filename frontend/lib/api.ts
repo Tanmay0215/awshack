@@ -9,8 +9,6 @@ export type DetectResult = {
 
 export type Stats = {
   range_days: number;
-  line: string | null;
-  lines: string[];
   totals: { scans: number; items: number; avg_confidence: number; avg_inference_ms: number };
   by_class: Record<string, number>;
   by_day: { day: string; counts: Record<string, number>; total: number }[];
@@ -21,10 +19,9 @@ export type Stats = {
   purity_pct: number;
 };
 export type Scan = {
-  id: string; ts: string; line: string; counts: Record<string, number>; total: number;
+  id: string; ts: string; counts: Record<string, number>; total: number;
   avg_confidence: number; original_url: string; annotated_url: string; demo: boolean;
 };
-export const LINES = ['line-1', 'line-2', 'line-3'];
 
 export const CLASSES = ['BIODEGRADABLE', 'CARDBOARD', 'GLASS', 'METAL', 'PAPER', 'PLASTIC'] as const;
 export const MAX_BYTES = 10 * 1024 * 1024;
@@ -40,10 +37,10 @@ export function validateFile(f: File): string | null {
   return null;
 }
 
-export async function detect(file: File, confPct: number, line?: string, signal?: AbortSignal): Promise<DetectResult> {
+export async function detect(file: File, confPct: number, signal?: AbortSignal): Promise<DetectResult> {
   const fd = new FormData();
   fd.append('file', file);
-  const res = await fetch(`${url('/detect')}?conf=${(confPct / 100).toFixed(2)}${line ? `&line=${encodeURIComponent(line)}` : ''}`, {
+  const res = await fetch(`${url('/detect')}?conf=${(confPct / 100).toFixed(2)}`, {
     method: 'POST',
     body: fd,
     signal,
@@ -56,6 +53,24 @@ export async function detect(file: File, confPct: number, line?: string, signal?
   return res.json();
 }
 
+export type FrameResult = {
+  detections: Detection[];
+  counts: Record<string, number>;
+  inference_ms: number;
+  width: number;
+  height: number;
+};
+
+/** Live mode: small JPEG in, boxes out. Throws Error('busy') on 429 so the caller can back off. */
+export async function detectFrame(blob: Blob, confPct: number, signal?: AbortSignal): Promise<FrameResult> {
+  const fd = new FormData();
+  fd.append('file', blob, 'frame.jpg');
+  const res = await fetch(`${url('/detect-frame')}?conf=${(confPct / 100).toFixed(2)}&imgsz=416`, { method: 'POST', body: fd, signal });
+  if (res.status === 429) throw new Error('busy');
+  if (!res.ok) throw new Error(`Request failed (${res.status})`);
+  return res.json();
+}
+
 export async function health(): Promise<boolean> {
   try { return (await fetch(url('/health'))).ok; } catch { return false; }
 }
@@ -65,10 +80,10 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   if (!res.ok) throw new Error(`Request failed (${res.status})`);
   return res.json();
 }
-export const getStats = (days: number, line: string, signal?: AbortSignal) =>
-  getJson<Stats>(`/stats?days=${days}&line=${encodeURIComponent(line)}`, signal);
-export const getScans = (line: string, limit = 24, signal?: AbortSignal) =>
-  getJson<{ scans: Scan[] }>(`/scans?limit=${limit}&line=${encodeURIComponent(line)}`, signal);
+export const getStats = (days: number, signal?: AbortSignal) =>
+  getJson<Stats>(`/stats?days=${days}`, signal);
+export const getScans = (limit = 24, signal?: AbortSignal) =>
+  getJson<{ scans: Scan[] }>(`/scans?limit=${limit}`, signal);
 
 /** Downscale to max 1600px longest side, JPEG q0.85 (Lambda body cap ~6MB). Falls back to the original on failure. */
 export async function resizeImage(file: File, max = 1600): Promise<File> {

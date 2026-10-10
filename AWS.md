@@ -2,7 +2,9 @@
 
 This document describes how Sortline (waste detection plus a segregation-facility dashboard) runs on AWS: what each service does, how requests flow, and where the sharp edges are. Names match `infra/template.yaml` (stack name default: `waste-detect`).
 
-> **Verification status.** The single-EC2 + Caddy design below replaced an earlier CloudFront + Lambda + ALB design (that earlier design was deployed and tested). This design has been tested locally with `docker compose` (site, `/dashboard`, `/api/detect`). Its AWS deployment, the real S3/DynamoDB persistence and the Let's Encrypt certificate have **not** been verified yet; the persistence code was tested only against a mocked AWS (moto).
+> **Status: deployed and verified live** at https://sortline.dsabuddy.com (Elastic IP `13.55.1.7`, stack `waste-detect`, ap-southeast-2). Verified on the real deployment: `/health`, `/detect`, persistence to S3 and DynamoDB, presigned image URLs (via the regional S3 endpoint), and a Let's Encrypt certificate issued by Caddy while the DNS record was Cloudflare-proxied. The design replaced an earlier CloudFront + Lambda + ALB version.
+>
+> **Not verified:** the API has no authentication; the site is not load tested; live mode (`/live`) was not tested with a real webcam in a browser (server side and the OpenCV script were tested; see `backend/LIVE.md`).
 
 ## Region
 
@@ -72,22 +74,23 @@ flowchart LR
 | EC2 | `Instance`, `InstanceRole`, `InstanceProfile`, `Ec2Sg` | Runs both containers (`c7i-flex.large` default, AL2023, 30 GB encrypted gp3, IMDSv2 required). User data installs Docker, creates the `sortline` network, pulls both images (retrying every 30 s until they exist), and starts `api` and `web` with `--restart always`. |
 | Elastic IP | `ElasticIp`, `ElasticIpAssociation` | Stable public address so the DNS A record survives instance stop/start. |
 | Caddy (in the `web` container) | image from `WebImageUri` (built from `frontend/Dockerfile` + `Caddyfile`) | Serves the static Next.js export, obtains and renews the Let's Encrypt certificate for `DomainName` automatically, redirects HTTP to HTTPS, adds security headers, caps request bodies at 12 MB, and reverse-proxies `/api/*` to `api:8000` with the `/api` prefix stripped. Certificates persist in the `caddy_data` Docker volume. |
-| FastAPI + YOLOv8 (the `api` container) | image from `ImageUri` (built from `backend/`) | CPU inference plus persistence and analytics (`/detect`, `/stats`, `/scans`, `/health`). Not published on the host; reachable only from the `web` container over the Docker network. |
+| FastAPI + YOLOv8 (the `api` container) | image from `ImageUri` (built from `backend/`) | CPU inference plus persistence and analytics (`/detect`, `/detect-frame`, `/stats`, `/scans`, `/health`). Not published on the host; reachable only from the `web` container over the Docker network. |
 | S3 (model) | `ModelBucket`, `ModelBucketPolicy` | Holds YOLO weights (`models/best.pt`, parameter `ModelKey`). Versioned, SSE-S3, public access blocked, TLS-only. Keeps the weights out of the Docker image. |
 | S3 (results) | `ResultsBucket`, `ResultsBucketPolicy` | Stores the original and annotated image of every scan (`scans/<date>/<scan_id>/original.jpg`, `annotated.jpg`). Private, SSE-S3, public access blocked, TLS-only, objects under `scans/` expire after 30 days. The dashboard shows them through 1-hour presigned URLs. |
 | DynamoDB | `ScansTable` | One item per scan: partition key `day` (UTC date), sort key `sk` (`<timestamp>#<scan_id>`); attributes include line, class counts, total, confidence, inference time, image keys, detections. On-demand billing, SSE enabled. Queried per day by `/stats` and `/scans`. |
 | Docker Hub (external) | `ImageUri`, `WebImageUri` | Hosts both images in public repositories, pulled anonymously. Not managed by the stack. Build and push with `infra/scripts/build-push.sh` (api) and `build-push-web.sh` (web) after `docker login`. |
 | VPC / SG | `Vpc`, `SubnetA`, `Igw`, `PublicRouteTable`, `Ec2Sg` | `Ec2Sg` allows tcp 80, tcp 443 and udp 443 (HTTP/3) from anywhere. Port 8000 and SSH are not open. No NAT gateway (cost) because the instance is in a public subnet. |
-| IAM | `InstanceRole` (SSM core + inline `ModelRead` and `ScanStorage`) | Least privilege: read `ModelBucket`; put/get objects in `ResultsBucket`; PutItem/GetItem/Query/BatchWriteItem/DeleteItem on `ScansTable`. |
+| IAM | `InstanceRole` (SSM core + inline `ModelRead`, `ContainerLogs` and `ScanStorage`) | Least privilege: read `ModelBucket`; put/get objects in `ResultsBucket`; PutItem/GetItem/Query/BatchWriteItem/DeleteItem on `ScansTable`. |
 | SSM | `AmazonSSMManagedInstanceCore`; AMI via `{{resolve:ssm:...al2023...}}` | Shell-less access (restart containers, run commands) with no SSH key. Also resolves the latest AL2023 AMI at deploy time. |
-| DNS (outside AWS) | A record for `DomainName` | Managed at the domain provider (not Route 53 in this stack). Must point at the `ElasticIp` output. |
+| CloudWatch Logs | `ApiLogGroup` (`/sortline/api`), `WebLogGroup` (`/sortline/web`) | Both containers use the Docker `awslogs` log driver (streams `api` and `web`). Retention 14 days. The instance role's `ContainerLogs` policy allows `logs:CreateLogStream` and `logs:PutLogEvents` on these two groups only. |
+| DNS (outside AWS) | A record for `DomainName` | Managed at the domain provider (Cloudflare; not Route 53 in this stack). Must point at the `ElasticIp` output. Currently Cloudflare-proxied and working. |
 
 ## Request flows
 
 ### Page load
 
 1. The browser resolves `sortline.dsabuddy.com` to the Elastic IP and connects to Caddy on 443 (HTTP on 80 is redirected to HTTPS).
-2. Caddy serves the static export from `/srv`: `/` (scanner) and `/dashboard/`. Files under `/_next/static/*` get `Cache-Control: public, max-age=31536000, immutable`.
+2. Caddy serves the static export from `/srv`: `/` (scanner), `/dashboard/` and `/live/`. Files under `/_next/static/*` get `Cache-Control: public, max-age=31536000, immutable`.
 3. The page calls `GET /api/health` to show backend status; the dashboard polls `/api/stats` and `/api/scans` every 10 s.
 
 ### `POST /api/detect?conf=0.40&line=line-1`
@@ -98,11 +101,20 @@ flowchart LR
 4. It then saves the original and annotated JPEGs to `ResultsBucket` and the scan record to `ScansTable` (best effort: a storage failure is logged and the request still returns 200; storage is skipped entirely when `RESULTS_BUCKET`/`SCANS_TABLE` are unset).
 5. The JSON response contains `detections`, `counts`, `image` (annotated JPEG as base64 data URL), `inference_ms` and `scan_id`.
 
+### `POST /api/detect-frame?conf=0.40&imgsz=416` (live mode)
+
+Used by the `/live` page (webcam). The browser sends one downscaled JPEG frame (max 480 px, 1 MB cap) at a time and draws the returned boxes on a canvas. The response contains `detections`, `counts`, `inference_ms`, `width` and `height` only: no annotated image and **nothing is persisted** to S3 or DynamoDB. If the model lock is busy the API returns `429` immediately (`Retry-After: 1`) instead of queueing, and the page retries after 150 ms. Expect about 75 ms inference on the EC2 instance and roughly 5-8 FPS for one viewer. Live viewers compete with `/detect` for the same lock. The camera needs HTTPS or localhost. Details and measurements: [`backend/LIVE.md`](backend/LIVE.md).
+
 ### Dashboard data
 
 - `GET /api/stats?days=7&line=` returns totals, per-class counts, per-day and per-hour series, top class, purity, and estimated weight and recovery value. Weight, value and purity are rough estimates from per-class constants in `backend/app/store.py`.
 - `GET /api/scans?limit=24&line=` returns recent scans with 1-hour presigned S3 URLs for both images.
-- Demo data can be loaded with `backend/scripts/seed.py` (items are flagged `demo` and shown with a "demo" badge); see `deploy.md`.
+- Demo seeding exists (`backend/scripts/seed.py`, items flagged `demo`), but the demo data was cleared and is **not currently loaded**; the dashboard shows real scans only. See `deploy.md`.
+- The scanner page shows class chips; clicking a chip filters the detections table and boxes by that class.
+
+### The `line` parameter
+
+The production-line concept (`line-1` to `line-3`) was removed from the UI. The backend still accepts an optional `line` query parameter on `/detect`, `/stats` and `/scans` (default `line-1`, pattern `[A-Za-z0-9_-]{1,32}`) and stores it with each scan, so older clients and seeded data keep working.
 
 ## Security model
 
@@ -111,15 +123,15 @@ flowchart LR
 - Both buckets block public access and deny non-TLS requests. Result images are served only through short-lived presigned URLs.
 - EC2: IMDSv2 required, encrypted root volume, no SSH (use SSM), instance role limited to what is listed above.
 - Backend validates upload type by magic bytes, caps size at 10 MB and image area at 50 megapixels; the container runs as non-root user `app` (uid 10001).
-- The API endpoints (`/detect`, `/stats`, `/scans`) have **no authentication**. Anyone who can reach the site can upload images and read scan data and result images. Fine for a demo; add auth before real use.
+- The API endpoints (`/detect`, `/detect-frame`, `/stats`, `/scans`) have **no authentication**. Anyone who can reach the site can upload images and read scan data and result images. Fine for a demo; add auth before real use.
 - Backend CORS defaults to `*` (`CORS_ORIGINS`); the site and API are same-origin through Caddy, so it can be tightened.
 - Human IAM access is managed by AWS for this project; the template creates only service roles.
 
 ## Known limits
 
 - **Single instance, no HA.** One EC2 instance; instance loss or an AZ outage means downtime. `--restart always` covers container crashes and reboots only.
-- **Serialized inference.** A `threading.Lock` guards the model (ultralytics predictors are not thread-safe), so concurrent requests queue.
-- **Certificate depends on DNS.** Caddy can obtain a certificate only after the A record for `DomainName` points at the Elastic IP and ports 80/443 are reachable. Until then HTTPS fails. If the DNS record is behind a proxy (for example Cloudflare "proxied"), issuance may fail; use "DNS only" until the certificate exists.
+- **Serialized inference.** A `threading.Lock` guards the model (ultralytics predictors are not thread-safe), so concurrent `/detect` requests queue; `/detect-frame` returns 429 instead.
+- **Certificate depends on DNS.** Caddy can obtain a certificate only after the A record for `DomainName` points at the Elastic IP and ports 80/443 are reachable. Until then HTTPS fails. The current Cloudflare-proxied record worked and the certificate was issued; if issuance ever fails behind the proxy, switch the record to "DNS only" until the certificate exists.
 - **Let's Encrypt rate limits.** Repeatedly recreating the `caddy_data` volume re-requests certificates and can hit rate limits. Keep the volume.
 - **Updates are manual.** User data runs only on first boot. After the stack is updated, or when you push new images, run `infra/scripts/update-instance.sh` to pull and recreate the containers.
 - **EC2 in a public subnet** with an Elastic IP (no NAT). Protected by `Ec2Sg`; a private subnet plus a load balancer would be stronger but costs more.
@@ -128,7 +140,8 @@ flowchart LR
 - **Cold start.** Model download plus warm-up takes time; `/health` shows `model_loaded: false` until done, and `/detect` returns 503. The model is downloaded only when the `api` container starts, so a late model upload needs a container restart (`update-instance.sh`).
 - **Free-plan instance types.** The free plan rejected `t3.*` (for example `t3.medium`) with "not eligible for Free Tier". The default `c7i-flex.large` (4 GB) is eligible. List eligible types with `aws ec2 describe-instance-types --filters Name=free-tier-eligible,Values=true`.
 - **Public images.** The Docker Hub repositories are public, so anyone can pull them. They contain no secrets; the weights stay in `ModelBucket`.
-- **Not load tested; persistence not yet verified on real AWS.**
+- **Not load tested.** Live mode is realistic for about one viewer.
+- **Orphan buckets.** `waste-detect-sitebucket-*` and `waste-detect-cfn-artifacts-*` are left over from earlier designs. They are not in the stack and `destroy.sh` does not remove them. Delete them manually (pending your decision).
 
 ## Rough monthly cost drivers
 
@@ -147,7 +160,7 @@ There is no load balancer, CloudFront or Lambda in this design, which removes th
 
 ## Teardown
 
-Run `infra/scripts/destroy.sh`. It empties `ModelBucket` and `ResultsBucket` (all object versions), deletes the stack (including `ScansTable` and the Elastic IP), and waits for completion. A stray bucket `waste-detect-cfn-artifacts-<account>-<region>` may exist from an early packaging attempt; it is not part of the stack and can be deleted. Remove the DNS A record yourself. See `deploy.md` section "Clean up".
+Run `infra/scripts/destroy.sh`. It empties `ModelBucket` and `ResultsBucket` (all object versions), deletes the stack (including `ScansTable` and the Elastic IP), and waits for completion. Stale buckets `waste-detect-sitebucket-*` and `waste-detect-cfn-artifacts-*` from earlier designs are not part of the stack; delete them manually. Remove the DNS A record yourself. See `deploy.md` section "Clean up".
 
 ## Stack outputs
 
@@ -159,6 +172,17 @@ Run `infra/scripts/destroy.sh`. It empties `ModelBucket` and `ResultsBucket` (al
 | `ModelBucketName` | `upload-model.sh` target |
 | `ResultsBucketName` | Scan images (and `seed.py`) |
 | `ScansTableName` | Scan records (and `seed.py`) |
+| `ApiLogGroupName` | CloudWatch log group `/sortline/api` |
+| `WebLogGroupName` | CloudWatch log group `/sortline/web` |
+
+## Logs
+
+Container logs go to CloudWatch Logs (14-day retention). Tail the API live:
+
+```bash
+aws logs tail /sortline/api --follow --region ap-southeast-2
+aws logs tail /sortline/web --follow --region ap-southeast-2
+```
 
 ## Template parameters
 

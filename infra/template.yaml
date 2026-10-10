@@ -125,6 +125,16 @@ Resources:
       SSESpecification: {SSEEnabled: true}
 
   # ---------------- EC2 ----------------
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /sortline/api
+      RetentionInDays: 14
+  WebLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /sortline/web
+      RetentionInDays: 14
   InstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -141,6 +151,11 @@ Resources:
             Statement:
               - {Effect: Allow, Action: 's3:GetObject', Resource: !Sub '${ModelBucket.Arn}/*'}
               - {Effect: Allow, Action: 's3:ListBucket', Resource: !GetAtt ModelBucket.Arn}
+        - PolicyName: ContainerLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - {Effect: Allow, Action: ['logs:CreateLogStream', 'logs:PutLogEvents'], Resource: [!GetAtt ApiLogGroup.Arn, !GetAtt WebLogGroup.Arn]}
         - PolicyName: ScanStorage
           PolicyDocument:
             Version: '2012-10-17'
@@ -183,11 +198,13 @@ Resources:
           done
           docker rm -f api web backend 2>/dev/null || true
           docker run -d --name api --network sortline --restart always \
+            --log-driver awslogs --log-opt awslogs-region=${AWS::Region} --log-opt awslogs-group=${ApiLogGroup} --log-opt awslogs-stream=api \
             -e MODEL_S3_URI="s3://${ModelBucket}/${ModelKey}" \
             -e RESULTS_BUCKET=${ResultsBucket} -e SCANS_TABLE=${ScansTable} \
             -e AWS_REGION=${AWS::Region} -e AWS_DEFAULT_REGION=${AWS::Region} \
             "$IMAGE"
           docker run -d --name web --network sortline --restart always \
+            --log-driver awslogs --log-opt awslogs-region=${AWS::Region} --log-opt awslogs-group=${WebLogGroup} --log-opt awslogs-stream=web \
             -p 80:80 -p 443:443 -p 443:443/udp \
             -e SITE_ADDRESS=${DomainName} \
             -v caddy_data:/data -v caddy_config:/config \
@@ -213,3 +230,7 @@ Outputs:
     Value: !Ref ResultsBucket
   ScansTableName:
     Value: !Ref ScansTable
+  ApiLogGroupName:
+    Value: !Ref ApiLogGroup
+  WebLogGroupName:
+    Value: !Ref WebLogGroup
