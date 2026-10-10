@@ -24,6 +24,27 @@ URL_TTL = 3600
 # Rough estimates only: average item mass (kg) and scrap/recycling value (USD/kg).
 AVG_ITEM_KG = {"BIODEGRADABLE": 0.30, "CARDBOARD": 0.25, "GLASS": 0.40, "METAL": 0.05, "PAPER": 0.05, "PLASTIC": 0.03}
 USD_PER_KG = {"BIODEGRADABLE": 0.02, "CARDBOARD": 0.10, "GLASS": 0.05, "METAL": 1.20, "PAPER": 0.12, "PLASTIC": 0.35}
+# kg CO2e avoided per kg recycled/composted instead of landfilled. Rounded from US EPA WARM
+# (recycling or composting vs landfilling, mixed-material factors); indicative only.
+CO2E_PER_KG = {"BIODEGRADABLE": 0.6, "CARDBOARD": 3.1, "GLASS": 0.3, "METAL": 4.4, "PAPER": 3.5, "PLASTIC": 1.0}
+CAR_KG_PER_KM = 0.17     # average petrol passenger car
+TREE_KG_PER_DAY = 0.06   # ~22 kg CO2 absorbed per mature tree per year
+
+
+def impact(counts: dict) -> dict:
+    """Estimated weight and climate impact of correctly disposing the given per-class item counts."""
+    kg = co2 = 0.0
+    for c, n in counts.items():
+        c = c.upper()
+        if c in AVG_ITEM_KG:
+            kg += int(n) * AVG_ITEM_KG[c]
+            co2 += int(n) * AVG_ITEM_KG[c] * CO2E_PER_KG[c]
+    return {
+        "weight_kg": round(kg, 3),
+        "co2e_kg": round(co2, 3),
+        "car_km": round(co2 / CAR_KG_PER_KM, 1),
+        "tree_days": round(co2 / TREE_KG_PER_DAY, 1),
+    }
 
 _clients: dict = {}
 
@@ -173,6 +194,7 @@ def compute_stats(days: int, line: str | None, items_by_day: dict[str, list[dict
     weight = sum(by_class.get(c, 0) * AVG_ITEM_KG[c] for c in CLASSES)
     value = sum(by_class.get(c, 0) * AVG_ITEM_KG[c] * USD_PER_KG[c] for c in CLASSES)
     top = max(by_class, key=by_class.get) if items else None
+    imp = impact(by_class)
     return {
         "range_days": days,
         "line": line,
@@ -190,6 +212,10 @@ def compute_stats(days: int, line: str | None, items_by_day: dict[str, list[dict
         "est_weight_kg": round(weight, 2),
         "est_value_usd": round(value, 2),
         "purity_pct": round(purity_sum / purity_n, 2) if purity_n else 0.0,
+        "est_co2e_kg": round(imp["co2e_kg"], 2),
+        "co2e_by_class": {c: round(by_class.get(c, 0) * AVG_ITEM_KG[c] * CO2E_PER_KG[c], 2) for c in CLASSES},
+        "car_km": imp["car_km"],
+        "tree_days": imp["tree_days"],
     }
 
 

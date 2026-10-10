@@ -1,3 +1,4 @@
+export type Impact = { weight_kg: number; co2e_kg: number; car_km: number; tree_days: number };
 export type Detection = { class: string; confidence: number; box: [number, number, number, number] };
 export type DetectResult = {
   detections: Detection[];
@@ -5,6 +6,7 @@ export type DetectResult = {
   image: string;
   inference_ms: number;
   scan_id?: string;
+  impact?: Impact;
 };
 
 export type Stats = {
@@ -17,6 +19,10 @@ export type Stats = {
   est_weight_kg: number;
   est_value_usd: number;
   purity_pct: number;
+  est_co2e_kg: number;
+  co2e_by_class: Record<string, number>;
+  car_km: number;
+  tree_days: number;
 };
 export type Scan = {
   id: string; ts: string; counts: Record<string, number>; total: number;
@@ -29,7 +35,7 @@ export const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
 
 const BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/$/, '');
 // Same-origin (CloudFront) uses /api/*; a direct backend base serves routes without the /api prefix.
-const url = (path: string) => (BASE ? `${BASE}${path}` : `/api${path}`);
+export const url = (path: string) => (BASE ? `${BASE}${path}` : `/api${path}`);
 
 export function validateFile(f: File): string | null {
   if (!ALLOWED.includes(f.type)) return 'Unsupported file type. Use JPG, PNG or WebP.';

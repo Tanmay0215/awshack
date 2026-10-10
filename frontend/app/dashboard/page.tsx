@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Nav from '@/app/_components/Nav';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLASSES, Scan, Stats, getScans, getStats } from '@/lib/api';
+import { fmtKg } from '@/lib/guidance';
 
 const COLORS: Record<string, string> = {
   BIODEGRADABLE: '#4d8f2a',
@@ -163,6 +165,35 @@ function ScanCard({ s }: { s: Scan }) {
   );
 }
 
+function ImpactPanel({ stats }: { stats: Stats }) {
+  const rows = CLASSES.map((c) => [c, stats.co2e_by_class?.[c] ?? 0] as const).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  const max = rows[0]?.[1] ?? 0;
+  return (
+    <Panel title="Climate impact" className="lg:col-span-2">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div>
+          <p className="font-display text-5xl font-black leading-none">{fmtKg(stats.est_co2e_kg)} <span className="text-xl">CO&#8322;e</span></p>
+          <p className="mt-2 text-sm">avoided by recycling or composting {fmtKg(stats.est_weight_kg)} of sorted waste instead of landfilling it.</p>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li className="border-l-4 border-moss pl-2">Like not driving a car <strong>{nf.format(Math.round(stats.car_km))} km</strong></li>
+            <li className="border-l-4 border-moss pl-2">What one tree absorbs in <strong>{nf.format(Math.round(stats.tree_days))} days</strong></li>
+          </ul>
+        </div>
+        <ul className="space-y-2" aria-label="CO2e avoided by material">
+          {rows.length === 0 && <li className="text-sm text-ink/60">No impact recorded yet.</li>}
+          {rows.map(([c, v]) => (
+            <li key={c} className="text-xs">
+              <div className="flex justify-between font-bold"><span>{c}</span><span>{fmtKg(v)}</span></div>
+              <div className="mt-0.5 h-3 border border-ink bg-ink/10"><div className="h-full" style={{ width: `${(v / max) * 100}%`, background: colorOf(c) }} /></div>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p className="mt-3 text-xs text-ink/70">Estimate: item counts x average item weight x rounded US EPA WARM factors (recycling/composting vs landfill).</p>
+    </Panel>
+  );
+}
+
 export default function Dashboard() {
   const [days, setDays] = useState(7);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -202,11 +233,7 @@ export default function Dashboard() {
           <p className="text-xs uppercase tracking-[0.3em] text-moss">Segregation facility / live dashboard</p>
           <h1 className="font-display text-4xl font-black uppercase leading-none sm:text-6xl">Sortline <span className="text-rust">Facility</span></h1>
         </div>
-        <nav aria-label="Primary" className="flex gap-2 text-xs font-bold uppercase tracking-widest">
-          <Link href="/" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Scan</Link>
-          <Link href="/dashboard" aria-current="page" className="border-2 border-ink bg-ink px-3 py-1 text-lime">Dashboard</Link>
-          <Link href="/live" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Live</Link>
-        </nav>
+        <Nav />
       </header>
 
       <div className="mb-6 flex flex-wrap items-end gap-4">
@@ -260,10 +287,12 @@ export default function Dashboard() {
             <Kpi label="Est. weight" value={stats.est_weight_kg.toFixed(1)} unit="kg" est />
             <Kpi label="Est. recovery value" value={`$${stats.est_value_usd.toFixed(2)}`} est />
             <Kpi label="Stream purity" value={stats.purity_pct.toFixed(1)} unit="%" est />
+            <Kpi label="CO₂e avoided" value={fmtKg(stats.est_co2e_kg ?? 0)} est />
           </dl>
-          <p className="mt-2 text-xs text-ink/70"><span className="text-rust">*</span> Weight, recovery value and purity are estimates derived from detected item counts, not measured values.</p>
+          <p className="mt-2 text-xs text-ink/70"><span className="text-rust">*</span> Weight, recovery value, purity and CO&#8322;e are estimates derived from detected item counts, not measured values.</p>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            {stats.est_co2e_kg != null && <ImpactPanel stats={stats} />}
             <Panel title="Items by day" className="lg:col-span-2">
               <DayChart data={stats.by_day} />
               <ul className="mt-2 flex flex-wrap gap-3 text-xs" aria-label="Chart legend">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import Nav from '@/app/_components/Nav';
 import { FrameResult, detectFrame, health } from '@/lib/api';
 
 const COLORS: Record<string, string> = {
@@ -152,11 +152,7 @@ export default function Live() {
           <p className="text-xs uppercase tracking-[0.3em] text-moss">Material recovery / vision unit</p>
           <h1 className="font-display text-5xl font-black uppercase leading-none sm:text-7xl">Sort<span className="text-rust">line</span></h1>
         </div>
-        <nav aria-label="Primary" className="flex gap-2 text-xs font-bold uppercase tracking-widest">
-          <Link href="/" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Scan</Link>
-          <Link href="/dashboard" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Dashboard</Link>
-          <Link href="/live" aria-current="page" className="border-2 border-ink bg-ink px-3 py-1 text-lime">Live</Link>
-        </nav>
+        <Nav />
         <p className="flex items-center gap-2 text-xs uppercase tracking-widest" role="status">
           <span className={`inline-block h-3 w-3 ${online === null ? 'bg-ink/30' : online ? 'bg-lime border border-ink' : 'bg-rust'}`} aria-hidden />
           API {online === null ? 'checking' : online ? 'online' : 'offline'}

@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { CLASSES, DetectResult, detect, health, resizeImage, validateFile } from '@/lib/api';
+import Nav from '@/app/_components/Nav';
+import { CLASSES, DetectResult, Impact, detect, health, resizeImage, validateFile } from '@/lib/api';
+import { equivalent, fmtKg, guideOf } from '@/lib/guidance';
 
 const COLORS: Record<string, string> = {
   BIODEGRADABLE: '#4d8f2a',
@@ -13,6 +14,51 @@ const COLORS: Record<string, string> = {
   PLASTIC: '#c2412d',
 };
 const colorOf = (c: string) => COLORS[c.toUpperCase()] ?? '#16201a';
+
+function ImpactBanner({ impact }: { impact: Impact }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-2 border-ink bg-lime p-4 shadow-[6px_6px_0_#16201a]">
+      <p className="font-display text-4xl font-black leading-none">{fmtKg(impact.co2e_kg)} <span className="text-lg">CO&#8322;e</span></p>
+      <p className="text-sm">
+        avoided if these {fmtKg(impact.weight_kg)} of waste are recycled or composted instead of landfilled,{' '}
+        <strong>{equivalent(impact)}</strong>. <span className="text-ink/70">Estimate based on item counts.</span>
+      </p>
+    </div>
+  );
+}
+
+function Guidance({ counts }: { counts: Record<string, number> }) {
+  const found = CLASSES.filter((c) => (counts[c] ?? counts[c.toLowerCase()] ?? 0) > 0);
+  if (!found.length) return null;
+  return (
+    <section className="mt-8" aria-label="Disposal guidance">
+      <h3 className="mb-3 font-display text-2xl font-black uppercase">What to do with it</h3>
+      <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {found.map((c) => {
+          const g = guideOf(c);
+          if (!g) return null;
+          const n = counts[c] ?? counts[c.toLowerCase()];
+          return (
+            <li key={c} className="flex flex-col border-2 border-ink bg-sheet">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 text-white" style={{ background: colorOf(c) }}>
+                <span className="font-bold tracking-wider">{c} x{n}</span>
+              </div>
+              <div className="flex flex-1 flex-col gap-3 p-3 text-sm">
+                <p className="flex items-center gap-2 font-bold">
+                  <span className="inline-block h-4 w-4 border border-ink" style={{ background: g.binColor }} aria-hidden />
+                  {g.bin}
+                </p>
+                <ol className="list-decimal space-y-1 pl-5">{g.steps.map((st) => <li key={st}>{st}</li>)}</ol>
+                <p className="border-l-4 border-rust bg-rust/10 p-2 text-xs"><strong className="uppercase">Common mistake: </strong>{g.mistake}</p>
+                <p className="mt-auto text-xs text-ink/70"><strong className="uppercase text-ink">Becomes: </strong>{g.becomes}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -61,11 +107,7 @@ export default function Home() {
           <p className="text-xs uppercase tracking-[0.3em] text-moss">Material recovery / vision unit</p>
           <h1 className="font-display text-5xl font-black uppercase leading-none sm:text-7xl">Sort<span className="text-rust">line</span></h1>
         </div>
-        <nav aria-label="Primary" className="flex gap-2 text-xs font-bold uppercase tracking-widest">
-          <Link href="/" aria-current="page" className="border-2 border-ink bg-ink px-3 py-1 text-lime">Scan</Link>
-          <Link href="/dashboard" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Dashboard</Link>
-          <Link href="/live" className="border-2 border-ink bg-sheet px-3 py-1 hover:bg-lime">Live</Link>
-        </nav>
+        <Nav />
         <p className="flex items-center gap-2 text-xs uppercase tracking-widest" role="status">
           <span className={`inline-block h-3 w-3 ${online === null ? 'bg-ink/30' : online ? 'bg-lime border border-ink' : 'bg-rust'}`} aria-hidden />
           API {online === null ? 'checking' : online ? 'online' : 'offline'}
@@ -123,6 +165,8 @@ export default function Home() {
             <h2 className="font-display text-3xl font-black uppercase">Result - {total} item{total === 1 ? '' : 's'}</h2>
             <p className="text-xs uppercase tracking-widest">Inference {result.inference_ms} ms</p>
           </div>
+
+          {result.impact && total > 0 && <ImpactBanner impact={result.impact} />}
 
           <div className="grid gap-4 md:grid-cols-2">
             <figure className="border-2 border-ink bg-sheet p-2">
@@ -183,7 +227,9 @@ export default function Home() {
             )}
           </ul>
 
-          <div className="mt-5 overflow-x-auto border-2 border-ink bg-sheet">
+          <Guidance counts={result.counts} />
+
+          <div className="mt-8 overflow-x-auto border-2 border-ink bg-sheet">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">Detections</caption>
               <thead className="bg-ink text-xs uppercase tracking-widest text-lime">
