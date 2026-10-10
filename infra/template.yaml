@@ -1,0 +1,215 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sortline waste detection - single EC2 (Docker) running Caddy (HTTPS) + API containers behind an Elastic IP. Single Region; images pulled from Docker Hub.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: c7i-flex.large
+  ImageUri:
+    Type: String
+    Default: docker.io/tanman0215/waste-detect-api:latest
+    Description: Backend image on Docker Hub (public repo).
+  WebImageUri:
+    Type: String
+    Default: docker.io/tanman0215/sortline-web:latest
+    Description: Web (Caddy + static frontend) image on Docker Hub (public repo).
+  DomainName:
+    Type: String
+    Default: sortline.dsabuddy.com
+    Description: Public hostname; point its DNS A record at the ElasticIp output.
+  ModelKey:
+    Type: String
+    Default: models/best.pt
+
+Resources:
+  # ---------------- Network ----------------
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.20.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [{Key: Name, Value: !Sub '${AWS::StackName}-vpc'}]
+  Igw:
+    Type: AWS::EC2::InternetGateway
+  IgwAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: {VpcId: !Ref Vpc, InternetGatewayId: !Ref Igw}
+  SubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.20.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: {VpcId: !Ref Vpc}
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: IgwAttach
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Igw
+  SubnetARoute:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: {SubnetId: !Ref SubnetA, RouteTableId: !Ref PublicRouteTable}
+  Ec2Sg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Web instance - HTTP/HTTPS/HTTP3 from anywhere, no SSH (use SSM)
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0, Description: HTTP (ACME + redirect)}
+        - {IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: HTTPS}
+        - {IpProtocol: udp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: HTTP/3}
+
+  # ---------------- Model bucket ----------------
+  ModelBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      VersioningConfiguration: {Status: Enabled}
+      PublicAccessBlockConfiguration: {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+  ModelBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ModelBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt ModelBucket.Arn, !Sub '${ModelBucket.Arn}/*']
+            Condition: {Bool: {'aws:SecureTransport': 'false'}}
+
+  # ---------------- Results bucket + scans table ----------------
+  ResultsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      PublicAccessBlockConfiguration: {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      LifecycleConfiguration:
+        Rules:
+          - {Id: ExpireScans, Status: Enabled, Prefix: scans/, ExpirationInDays: 30}
+  ResultsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ResultsBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt ResultsBucket.Arn, !Sub '${ResultsBucket.Arn}/*']
+            Condition: {Bool: {'aws:SecureTransport': 'false'}}
+  ScansTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: day, AttributeType: S}
+        - {AttributeName: sk, AttributeType: S}
+      KeySchema:
+        - {AttributeName: day, KeyType: HASH}
+        - {AttributeName: sk, KeyType: RANGE}
+      SSESpecification: {SSEEnabled: true}
+
+  # ---------------- EC2 ----------------
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - {Effect: Allow, Principal: {Service: ec2.amazonaws.com}, Action: 'sts:AssumeRole'}
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      Policies:
+        - PolicyName: ModelRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - {Effect: Allow, Action: 's3:GetObject', Resource: !Sub '${ModelBucket.Arn}/*'}
+              - {Effect: Allow, Action: 's3:ListBucket', Resource: !GetAtt ModelBucket.Arn}
+        - PolicyName: ScanStorage
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - {Effect: Allow, Action: ['s3:PutObject', 's3:GetObject'], Resource: !Sub '${ResultsBucket.Arn}/*'}
+              - {Effect: Allow, Action: 's3:ListBucket', Resource: !GetAtt ResultsBucket.Arn}
+              - {Effect: Allow, Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:BatchWriteItem', 'dynamodb:DeleteItem'], Resource: !GetAtt ScansTable.Arn}
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}'
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref SubnetA
+      SecurityGroupIds: [!Ref Ec2Sg]
+      IamInstanceProfile: !Ref InstanceProfile
+      MetadataOptions: {HttpTokens: required, HttpEndpoint: enabled, HttpPutResponseHopLimit: 2}
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: {VolumeSize: 30, VolumeType: gp3, Encrypted: true, DeleteOnTermination: true}
+      Tags: [{Key: Name, Value: !Sub '${AWS::StackName}-web'}]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -uo pipefail
+          exec > >(tee /var/log/bootstrap.log) 2>&1
+          dnf install -y docker
+          systemctl enable --now docker
+          IMAGE="${ImageUri}"
+          until docker pull "$IMAGE"; do
+            echo "image pull failed, retrying in 30s"; sleep 30
+          done
+          docker network create sortline 2>/dev/null || true
+          WEB_IMAGE="${WebImageUri}"
+          until docker pull "$WEB_IMAGE"; do
+            echo "web image pull failed, retrying in 30s"; sleep 30
+          done
+          docker rm -f api web backend 2>/dev/null || true
+          docker run -d --name api --network sortline --restart always \
+            -e MODEL_S3_URI="s3://${ModelBucket}/${ModelKey}" \
+            -e RESULTS_BUCKET=${ResultsBucket} -e SCANS_TABLE=${ScansTable} \
+            -e AWS_REGION=${AWS::Region} -e AWS_DEFAULT_REGION=${AWS::Region} \
+            "$IMAGE"
+          docker run -d --name web --network sortline --restart always \
+            -p 80:80 -p 443:443 -p 443:443/udp \
+            -e SITE_ADDRESS=${DomainName} \
+            -v caddy_data:/data -v caddy_config:/config \
+            "$WEB_IMAGE"
+  ElasticIp:
+    Type: AWS::EC2::EIP
+    DependsOn: IgwAttach
+    Properties: {Domain: vpc}
+  ElasticIpAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties: {AllocationId: !GetAtt ElasticIp.AllocationId, InstanceId: !Ref Instance}
+
+Outputs:
+  ElasticIp:
+    Value: !Ref ElasticIp
+  SiteUrl:
+    Value: !Sub 'https://${DomainName}'
+  InstanceId:
+    Value: !Ref Instance
+  ModelBucketName:
+    Value: !Ref ModelBucket
+  ResultsBucketName:
+    Value: !Ref ResultsBucket
+  ScansTableName:
+    Value: !Ref ScansTable

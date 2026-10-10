@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #efeadd;
+  background-image: linear-gradient(rgba(22,32,26,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(22,32,26,.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: #16201a;
+}
+input[type='range'] { accent-color: #2f4a38; }
+:focus-visible { outline: 3px solid #b4491f; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

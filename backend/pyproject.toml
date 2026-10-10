@@ -1,0 +1,26 @@
+[project]
+name = "waste-detect-backend"
+version = "0.1.0"
+description = "FastAPI + YOLOv8 waste detection service"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.32.1",
+    "python-multipart==0.0.20",
+    "ultralytics==8.3.50",
+    "torch==2.5.1",
+    "torchvision==0.20.1",
+    "opencv-python-headless==4.10.0.84",
+    "numpy==1.26.4",
+    "boto3==1.35.90",
+]
+
+# CPU-only torch wheels on Linux (EC2 image); macOS uses the default wheels.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu", marker = "sys_platform == 'linux'" }
+torchvision = { index = "pytorch-cpu", marker = "sys_platform == 'linux'" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

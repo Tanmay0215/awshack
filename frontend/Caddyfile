@@ -1,0 +1,32 @@
+# Serves the Next.js static export and proxies /api/* to the FastAPI container.
+# SITE_ADDRESS=sortline.dsabuddy.com -> automatic HTTPS (Let's Encrypt); default localhost for local runs.
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	request_body {
+		max_size 12MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	handle_path /api/* {
+		reverse_proxy {$API_UPSTREAM:api:8000} {
+			transport http {
+				response_header_timeout 60s
+			}
+		}
+	}
+
+	handle {
+		root * /srv
+		@static path /_next/static/*
+		header @static Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} {path}/index.html
+		file_server
+	}
+}

@@ -1,0 +1,21 @@
+# Local run: docker compose up --build  ->  http://localhost:8080
+# Mirrors production (Caddy serves the Next.js export and proxies /api/* to the FastAPI container).
+# Persistence (S3/DynamoDB) is off locally: RESULTS_BUCKET / SCANS_TABLE are unset, so /dashboard is empty.
+services:
+  api:
+    build: ./backend
+    environment:
+      MODEL_PATH: /models/best.pt
+      CORS_ORIGINS: "*"
+    volumes:
+      - "./model/streamlit-detection-tracking - app/weights/best.pt:/models/best.pt:ro"
+    expose:
+      - "8000"
+  web:
+    build: ./frontend
+    environment:
+      SITE_ADDRESS: ":80"   # plain HTTP locally; production sets the domain for automatic HTTPS
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
