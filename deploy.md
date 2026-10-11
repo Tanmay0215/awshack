@@ -2,14 +2,14 @@
 
 After this guide you have Sortline running at your own HTTPS domain on a single EC2 instance. For how the pieces fit together, see [`AWS.md`](AWS.md).
 
-Current deployment: stack `waste-detect`, Region `ap-southeast-2`, Elastic IP `13.55.1.7`, domain `pixelapp.tech` (+ `www.pixelapp.tech`; `sortline.dsabuddy.com` still served, set via `SITE_ADDRESS` in `infra/scripts/env-config`), images `tanman0215/waste-detect-api` and `tanman0215/sortline-web` on Docker Hub.
+Current deployment: stack `waste-detect`, Region `ap-southeast-2`, Elastic IP `13.55.1.7`, domain `pixelapp.tech` (+ `www.pixelapp.tech`, set via `SITE_ADDRESS` in `infra/scripts/env-config`), images `tanman0215/waste-detect-api` and `tanman0215/sortline-web` on Docker Hub.
 
 ## 1. Prerequisites
 
 - AWS CLI v2, logged in (`aws sts get-caller-identity` works).
 - Docker with buildx, and a Docker Hub login (`docker login`). The two repositories must be public.
 - [uv](https://docs.astral.sh/uv/) (Python backend) and Node 22+ with npm (frontend).
-- A domain you can edit DNS for.
+- A domain whose name servers you can change at the registrar.
 - The YOLO weights file `best.pt`. In this repo it is at `model/weights/best.pt`.
 
 ## 2. Confirm Region and plan
@@ -86,16 +86,21 @@ Make the instance run the latest images and the uploaded model:
 
 The API downloads the model when its container starts and needs about 15-30 seconds to load it.
 
-## 5. Point DNS at the instance
+## 5. DNS in Route 53
 
-Create an A record for your domain pointing at the `ElasticIp` stack output:
+DNS for the domain is a Route 53 public hosted zone in its own stack (`infra/dns.yaml`, stack `waste-detect-dns`), separate from the app stack so tearing down the app never removes DNS or mail records.
 
 ```bash
-aws cloudformation describe-stacks --stack-name waste-detect --region ap-southeast-2 \
-  --query "Stacks[0].Outputs[?OutputKey=='ElasticIp'].OutputValue" --output text
+cd infra
+./scripts/deploy-dns.sh                          # reads ElasticIp from the app stack; prints NameServers
+./scripts/deploy-dns.sh DomainName=x.example.com # other domain
 ```
 
-"DNS only" and Cloudflare "proxied" both worked. Caddy requests the Let's Encrypt certificate automatically once the name resolves and ports 80/443 are reachable. Nothing else to configure.
+It creates A records for the apex and `www` pointing at the Elastic IP, plus the records copied from the registrar's DNS: apex MX (SES inbound, us-east-1), Google site verification TXT, `_dmarc` TXT, and the Resend email records (`send.` MX/SPF TXT, `resend._domainkey` DKIM TXT). Before switching, compare against the registrar's record list; anything else must be added to `dns.yaml` first or it stops resolving.
+
+Then, at the registrar (Namify for `pixelapp.tech`), replace the name servers with the four in the `NameServers` output. Propagation takes minutes to a few hours; check with `dig +short NS pixelapp.tech`. Caddy keeps serving and renewing the Let's Encrypt certificate as before; it does not depend on which DNS provider answers.
+
+The hosted zone has `DeletionPolicy: Retain` and costs about $0.50/month plus queries.
 
 ## 6. Smoke tests
 
@@ -166,7 +171,7 @@ cd infra
 
 Then:
 
-- Remove the DNS A record.
+- Leave the DNS stack in place if the domain is still used (mail records live there). To remove it: `aws cloudformation delete-stack --stack-name waste-detect-dns`; the hosted zone is retained, so delete it in Route 53 afterwards and point the registrar at other name servers first.
 - Delete the stale buckets `waste-detect-sitebucket-*` and `waste-detect-cfn-artifacts-*` by hand. They are left from earlier designs, are not in the stack, and `destroy.sh` does not touch them.
 
 ## Troubleshooting
@@ -181,7 +186,7 @@ Then:
 | `502` or a blank API response right after a deploy | The model is still loading (about 15-30 s). Check `/api/health` for `model_loaded: true`. |
 | `/detect` returns 503 | Model not loaded: weights missing from `ModelBucket`. Run `upload-model.sh`, then `update-instance.sh`. |
 | `/detect-frame` returns 429 | Normal: the model is busy with another request. The live page retries on its own. |
-| HTTPS fails or certificate not issued | DNS does not resolve to the Elastic IP yet, or ports 80/443 are blocked. Fix DNS; Caddy retries automatically. Check `aws logs tail /sortline/web`. |
+| HTTPS fails or certificate not issued | DNS does not resolve to the Elastic IP yet (name servers not switched to Route 53, or still propagating), or ports 80/443 are blocked. Check `dig +short pixelapp.tech`; Caddy retries automatically. Check `aws logs tail /sortline/web`. |
 | `docker push` fails with a TLS handshake timeout | Docker Hub flakiness. Retry the build-push script. |
 | `/live` says the camera is unavailable | Browsers allow the camera only on HTTPS or localhost. Use the https:// address and grant permission. |
 | Everything suddenly returns Access Denied | Check for a spend limit in AWS Settings > Billing; a limit pauses the project when exceeded. |

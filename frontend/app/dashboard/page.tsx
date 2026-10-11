@@ -273,7 +273,7 @@ export default function Dashboard() {
       {empty && !error && (
         <div className="border-2 border-dashed border-ink bg-sheet p-10 text-center">
           <p className="font-display text-4xl font-black uppercase">No scans yet</p>
-          <p className="mt-2 text-sm">Nothing recorded for this range. <Link href="/" className="font-bold text-rust underline">Run a scan</Link> to populate the dashboard.</p>
+          <p className="mt-2 text-sm">Nothing recorded for this range. <Link href="/scan" className="font-bold text-rust underline">Run a scan</Link> to populate the dashboard.</p>
         </div>
       )}
 

@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sortline DNS - Route 53 public hosted zone for the site domain. Separate from the app stack so deleting the app never removes DNS or mail records.
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: pixelapp.tech
+  ElasticIp:
+    Type: String
+    Description: App stack's ElasticIp output (deploy-dns.sh fills this in).
+  GoogleSiteVerification:
+    Type: String
+    Default: google-site-verification=qyuEliALX2Ds2jHXMH8mGPAQnqBQslHZC0z1nstU08U
+
+Resources:
+  Zone:
+    Type: AWS::Route53::HostedZone
+    # Keep the zone (and its name servers at the registrar) even if this stack is deleted.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: !Ref DomainName
+
+  # Site: apex + www -> Elastic IP. Caddy on the instance issues the HTTPS certificate.
+  ApexA:
+    Type: AWS::Route53::RecordSet
+    Properties: {HostedZoneId: !Ref Zone, Name: !Ref DomainName, Type: A, TTL: '300', ResourceRecords: [!Ref ElasticIp]}
+  WwwA:
+    Type: AWS::Route53::RecordSet
+    Properties: {HostedZoneId: !Ref Zone, Name: !Sub 'www.${DomainName}', Type: A, TTL: '300', ResourceRecords: [!Ref ElasticIp]}
+
+  # Records copied from the registrar's DNS so mail and verification keep working after the move.
+  ApexMx:
+    Type: AWS::Route53::RecordSet
+    Properties: {HostedZoneId: !Ref Zone, Name: !Ref DomainName, Type: MX, TTL: '3600', ResourceRecords: ['5 inbound-smtp.us-east-1.amazonaws.com']}
+  ApexTxt:
+    Type: AWS::Route53::RecordSet
+    Properties: {HostedZoneId: !Ref Zone, Name: !Ref DomainName, Type: TXT, TTL: '3600', ResourceRecords: [!Sub '"${GoogleSiteVerification}"']}
+  DmarcTxt:
+    Type: AWS::Route53::RecordSet
+    Properties: {HostedZoneId: !Ref Zone, Name: !Sub '_dmarc.${DomainName}', Type: TXT, TTL: '3600', ResourceRecords: ['"v=DMARC1; p=none;"']}
+  SendMx:
+    Type: AWS::Route53::RecordSet
+    Properties: {HostedZoneId: !Ref Zone, Name: !Sub 'send.${DomainName}', Type: MX, TTL: '3600', ResourceRecords: ['10 feedback-smtp.us-east-1.amazonses.com']}
+  SendTxt:
+    Type: AWS::Route53::RecordSet
+    Properties: {HostedZoneId: !Ref Zone, Name: !Sub 'send.${DomainName}', Type: TXT, TTL: '3600', ResourceRecords: ['"v=spf1 include:amazonses.com ~all"']}
+  # Resend DKIM key (Resend sends via SES; send.* above is its return-path).
+  ResendDkim:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref Zone
+      Name: !Sub 'resend._domainkey.${DomainName}'
+      Type: TXT
+      TTL: '3600'
+      ResourceRecords: ['"p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDB5TK8t7G+7cviA/DZuWlq8PDcVhK6bMXRrx8PcE1dHJhPTnr62QOCckJwRdcxMz1JzssTWW+kuIeuy/3a2XLgHI4SIJNYH9c52gb/T5o2T0p2i3t/UnOuu/5L8cKRYlvV+gSVok8ifrwrSFkqglCxelp/rfWHQ3v7IHXBeNYRhwIDAQAB"']
+
+Outputs:
+  HostedZoneId:
+    Value: !Ref Zone
+  NameServers:
+    Description: Set these as the domain's name servers at the registrar.
+    Value: !Join [', ', !GetAtt Zone.NameServers]

@@ -1,10 +1,11 @@
 # Source this file: . ./env-config
 export REGION="${REGION:-ap-southeast-2}"
 export STACK_NAME="${STACK_NAME:-waste-detect}"
+export DNS_STACK_NAME="${DNS_STACK_NAME:-$STACK_NAME-dns}"  # Route 53 zone (dns.yaml), kept separate from the app stack
 export AWS_REGION="$REGION"
 export AWS_DEFAULT_REGION="$REGION"
 # Caddy site addresses (comma-separated). Overrides the stack's DomainName, which only applies at first boot.
-export SITE_ADDRESS="${SITE_ADDRESS:-pixelapp.tech, www.pixelapp.tech, sortline.dsabuddy.com}"
+export SITE_ADDRESS="${SITE_ADDRESS:-pixelapp.tech, www.pixelapp.tech}"
 
 # stack_output <OutputKey> -> prints value
 stack_output() {

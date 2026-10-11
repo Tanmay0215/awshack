@@ -1,0 +1,269 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700" role="img" aria-labelledby="t d">
+  <title id="t">Sortline: from one photo to a cleaner city</title>
+  <desc id="d">Animated walkthrough. 1, a photo is scanned and the AI boxes plastic, metal, cardboard and organic waste. 2, a citizen drops a geotagged report of a garbage spot. 3, a cleanup crew uploads an after photo and the AI verifies nothing is left before closing it. 4, a household sells sorted recyclables and a collector picks them up. 5, the dashboard adds up kilograms recovered and CO2e avoided.</desc>
+  <defs>
+    <clipPath id="p4"><rect x="422" y="446" width="356" height="232"/></clipPath>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#16201a" stroke-opacity=".06"/></pattern>
+    <style>
+      .d { font-family: "Arial Narrow", Impact, Haettenschweiler, "Helvetica Neue", sans-serif; font-weight: 900; }
+      .m { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .b { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700; }
+    </style>
+  </defs>
+  <rect width="1200" height="700" fill="#efeadd"/>
+  <rect width="1200" height="700" fill="url(#grid)"/>
+
+  <!-- header -->
+  <text x="40" y="62" class="d" font-size="52" fill="#16201a" letter-spacing="1">SORT<tspan fill="#b4491f">LINE</tspan></text>
+  <text x="270" y="44" class="m" font-size="13" fill="#2f4a38" letter-spacing="3">ONE PHOTO IN.</text>
+  <text x="270" y="62" class="m" font-size="13" fill="#2f4a38" letter-spacing="3">SORTED, CLEANED, PAID, COUNTED.</text>
+  <rect x="760" y="44" width="400" height="12" fill="none" stroke="#16201a" stroke-width="2"/>
+  <rect x="762" y="46" width="396" height="8" fill="#b4491f">
+    <animate attributeName="width" values="0;396;396;0" keyTimes="0;0.96;0.99;1" dur="16s" repeatCount="indefinite"/>
+  </rect>
+  <g class="m" font-size="10" fill="#16201a" letter-spacing="1">
+    <text x="760" y="38">SCAN</text><text x="840" y="38">REPORT</text><text x="920" y="38">CLEAN</text><text x="1000" y="38">SELL</text><text x="1080" y="38">IMPACT</text>
+  </g>
+  <rect x="40" y="78" width="1120" height="4" fill="#16201a"/>
+
+
+  <g>
+    <rect x="46" y="106" width="550" height="280" fill="#16201a"/>
+    <rect x="40" y="100" width="550" height="280" fill="#f8f5ec" stroke="#16201a" stroke-width="3"/>
+    <rect x="40" y="100" width="550" height="34" fill="#16201a"/>
+    <rect x="40" y="100" width="46" height="34" fill="#c6e03a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0;0.01;0.19;0.2;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="63" y="123" text-anchor="middle" class="b" font-size="15" fill="#b4491f">01</text>
+    <text x="63" y="123" text-anchor="middle" class="b" font-size="15" fill="#16201a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0;0.01;0.19;0.2;1" dur="16s" repeatCount="indefinite"/>01</text>
+    <text x="98" y="123" class="b" font-size="14" fill="#c6e03a" letter-spacing="1.5">SCAN - AI SORTS A PHOTO</text>
+    <rect x="37" y="97" width="556" height="286" fill="none" stroke="#c6e03a" stroke-width="5"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0;0.01;0.19;0.2;1" dur="16s" repeatCount="indefinite"/></rect>
+  </g>
+
+  <g>
+    <rect x="60" y="150" width="300" height="212" fill="#d9d2bf" stroke="#16201a" stroke-width="2"/>
+    <rect x="60" y="300" width="300" height="62" fill="#cbc3ad"/>
+    <!-- bottle -->
+    <rect x="96" y="222" width="40" height="100" rx="9" fill="#7fb3c9"/><rect x="106" y="200" width="20" height="26" fill="#7fb3c9"/><rect x="104" y="194" width="24" height="9" fill="#2e6fa0"/>
+    <rect x="96" y="250" width="40" height="22" fill="#e8e2d0"/>
+    <!-- can -->
+    <rect x="160" y="262" width="44" height="62" rx="4" fill="#9aa5ae"/><rect x="160" y="262" width="44" height="7" fill="#7b8790"/><rect x="160" y="282" width="44" height="14" fill="#c2412d" opacity=".7"/>
+    <!-- box -->
+    <path d="M222 252 L300 236 L344 256 L344 324 L266 340 L222 320 Z" fill="#c89a5b"/><path d="M222 252 L300 236 L344 256 L266 272 Z" fill="#dbb27a"/><path d="M266 272 L266 340" stroke="#a8742f" stroke-width="2"/>
+    <!-- peel -->
+    <path d="M80 344 q30 -26 66 -6" stroke="#d8c23a" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M144 338 l8 -4" stroke="#6b5a1a" stroke-width="5" stroke-linecap="round"/>
+    
+    <rect x="90" y="190" width="52" height="138" fill="none" stroke="#c2412d" stroke-width="3" stroke-dasharray="380" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="380;380;0;0;380" keyTimes="0;0.05;0.08;0.96;1" dur="16s" repeatCount="indefinite"/></rect>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.07;0.09;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="88.5" y="173" width="87.2" height="17" fill="#c2412d"/><text x="93" y="185" class="m" font-size="11" fill="#fff" font-weight="700">PLASTIC 94%</text></g>
+    
+    <rect x="154" y="256" width="56" height="74" fill="none" stroke="#5b6b7a" stroke-width="3" stroke-dasharray="260" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="260;260;0;0;260" keyTimes="0;0.075;0.105;0.96;1" dur="16s" repeatCount="indefinite"/></rect>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.095;0.115;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="152.5" y="239" width="72.8" height="17" fill="#5b6b7a"/><text x="157" y="251" class="m" font-size="11" fill="#fff" font-weight="700">METAL 89%</text></g>
+    
+    <rect x="216" y="232" width="134" height="114" fill="none" stroke="#a8742f" stroke-width="3" stroke-dasharray="496" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="496;496;0;0;496" keyTimes="0;0.1;0.13;0.96;1" dur="16s" repeatCount="indefinite"/></rect>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.12;0.14;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="214.5" y="215" width="101.60000000000001" height="17" fill="#a8742f"/><text x="219" y="227" class="m" font-size="11" fill="#fff" font-weight="700">CARDBOARD 86%</text></g>
+    
+    <rect x="72" y="322" width="90" height="32" fill="none" stroke="#4d8f2a" stroke-width="3" stroke-dasharray="244" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="244;244;0;0;244" keyTimes="0;0.125;0.155;0.96;1" dur="16s" repeatCount="indefinite"/></rect>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.145;0.165;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="70.5" y="305" width="130.4" height="17" fill="#4d8f2a"/><text x="75" y="317" class="m" font-size="11" fill="#fff" font-weight="700">BIODEGRADABLE 77%</text></g>
+    <rect x="60" y="150" width="300" height="3" fill="#c6e03a">
+      <animate attributeName="y" values="150;150;359;359" keyTimes="0;0.005;0.05;1" dur="16s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.005;0.015;0.04;0.05;1" dur="16s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  <g class="m" font-size="12" fill="#16201a">
+    <text x="384" y="166" class="b" font-size="11" letter-spacing="2" fill="#2f4a38">DETECTIONS</text>
+    <rect x="384" y="174" width="186" height="2" fill="#16201a"/>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.06;0.08;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="384" y="184" width="12" height="12" fill="#c2412d"/><text x="402" y="195" font-weight="700" font-size="11">PLASTIC</text><text x="570" y="195" text-anchor="end" font-size="10" fill="#2f4a38">DRY BIN</text></g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.085;0.105;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="384" y="214" width="12" height="12" fill="#5b6b7a"/><text x="402" y="225" font-weight="700" font-size="11">METAL</text><text x="570" y="225" text-anchor="end" font-size="10" fill="#2f4a38">DRY BIN</text></g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.11;0.13;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="384" y="244" width="12" height="12" fill="#a8742f"/><text x="402" y="255" font-weight="700" font-size="11">CARDBOARD</text><text x="570" y="255" text-anchor="end" font-size="10" fill="#2f4a38">DRY BIN</text></g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.135;0.155;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="384" y="274" width="12" height="12" fill="#4d8f2a"/><text x="402" y="285" font-weight="700" font-size="11">BIODEGRADABLE</text><text x="570" y="285" text-anchor="end" font-size="10" fill="#2f4a38">WET BIN</text></g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.15;0.17;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="384" y="314" width="186" height="48" fill="#c6e03a" stroke="#16201a" stroke-width="2"/>
+      <text x="394" y="334" class="d" font-size="20" fill="#16201a">1.9 KG CO&#8322;e</text>
+      <text x="394" y="352" font-size="10" fill="#16201a">avoided if recycled</text>
+    </g>
+    <text x="384" y="304" font-size="10" fill="#2f4a38"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.145;0.165;0.96;1" dur="16s" repeatCount="indefinite"/>INFERENCE 112 MS</text>
+  </g>
+
+  <g>
+    <rect x="616" y="106" width="550" height="280" fill="#16201a"/>
+    <rect x="610" y="100" width="550" height="280" fill="#f8f5ec" stroke="#16201a" stroke-width="3"/>
+    <rect x="610" y="100" width="550" height="34" fill="#16201a"/>
+    <rect x="610" y="100" width="46" height="34" fill="#c6e03a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.2;0.21;0.39;0.4;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="633" y="123" text-anchor="middle" class="b" font-size="15" fill="#b4491f">02</text>
+    <text x="633" y="123" text-anchor="middle" class="b" font-size="15" fill="#16201a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.2;0.21;0.39;0.4;1" dur="16s" repeatCount="indefinite"/>02</text>
+    <text x="668" y="123" class="b" font-size="14" fill="#c6e03a" letter-spacing="1.5">REPORT - CITIZEN FLAGS A SPOT</text>
+    <rect x="607" y="97" width="556" height="286" fill="none" stroke="#c6e03a" stroke-width="5"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.2;0.21;0.39;0.4;1" dur="16s" repeatCount="indefinite"/></rect>
+  </g>
+
+  <g>
+    <rect x="630" y="150" width="300" height="212" fill="#dfe7d3" stroke="#16201a" stroke-width="2"/>
+    <g stroke="#fff" stroke-width="14" fill="none"><path d="M630 230 H930"/><path d="M720 150 V362"/><path d="M630 320 Q760 300 930 330"/><path d="M850 150 L800 362"/></g>
+    <g fill="#c9d6b8"><rect x="640" y="160" width="66" height="56"/><rect x="734" y="160" width="58" height="56"/><rect x="866" y="244" width="54" height="56"/><rect x="640" y="244" width="66" height="60"/></g>
+    <rect x="740" y="248" width="44" height="40" fill="#8fbf6a"/>
+    <text x="900" y="354" class="m" font-size="9" fill="#2f4a38">MAP</text>
+    <circle cx="800" cy="282" r="6" fill="none" stroke="#b4491f" stroke-width="3">
+      <animate attributeName="r" values="4;4;30;30" keyTimes="0;0.25;0.30;1" dur="16s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.25;0.26;0.29;0.3;1" dur="16s" repeatCount="indefinite"/>
+    </circle>
+    <g><animateTransform attributeName="transform" type="translate" values="0 -140;0 -140;0 0;0 0;0 -140" keyTimes="0;0.21;0.25;0.96;1" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.21;0.215;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <path d="M800 282 C786 262 780 254 780 244 A20 20 0 1 1 820 244 C820 254 814 262 800 282 Z" fill="#b4491f" stroke="#16201a" stroke-width="2"/>
+      <circle cx="800" cy="244" r="7" fill="#f8f5ec"/>
+    </g>
+  </g>
+  <g class="m" fill="#16201a">
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.26;0.28;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="950" y="150" width="190" height="104" fill="#fff" stroke="#16201a" stroke-width="2"/>
+      <g transform="translate(958 154) scale(0.62)">
+      <ellipse cx="60" cy="78" rx="58" ry="10" fill="#b9b19c"/>
+      <path d="M8 76 Q20 40 46 46 Q60 22 82 40 Q108 38 112 76 Z" fill="#8c8473"/>
+      <rect x="24" y="44" width="16" height="30" rx="4" fill="#7fb3c9" transform="rotate(-25 32 60)"/>
+      <rect x="70" y="50" width="24" height="18" fill="#c89a5b" transform="rotate(12 82 59)"/>
+      <rect x="52" y="34" width="14" height="20" rx="2" fill="#9aa5ae"/>
+      <path d="M86 70 q10 -16 22 -4" stroke="#d8c23a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <circle cx="44" cy="66" r="6" fill="#8a5fb0"/>
+    </g>
+      <text x="1040" y="176" font-size="10" font-weight="700">REPORT #A7F2</text>
+      <text x="1040" y="192" font-size="9" fill="#2f4a38">12.971, 77.594</text>
+      <text x="1040" y="206" font-size="9" fill="#2f4a38">"near market"</text>
+      <text x="958" y="240" font-size="9" font-weight="700">AI TAGGED:</text>
+    </g>
+    <g font-size="9" font-weight="700" fill="#fff">
+      <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.29;0.31;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="1022" y="231" width="60" height="13" fill="#c2412d"/><text x="1026" y="241">PLASTIC 6</text></g>
+      <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.3;0.32;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="1086" y="231" width="48" height="13" fill="#8a5fb0"/><text x="1090" y="241">PAPER 3</text></g>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.32;0.34;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="950" y="270" width="80" height="24" fill="#b4491f"/><text x="990" y="287" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">OPEN</text>
+      <text x="1040" y="286" font-size="10" fill="#2f4a38">-&gt; cleanup queue</text>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.36;0.38;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <text x="950" y="322" font-size="10">No crew in 48 h?</text>
+      <text x="950" y="338" font-size="10" font-weight="700" fill="#b4491f">AUTO-ESCALATED</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="46" y="416" width="360" height="270" fill="#16201a"/>
+    <rect x="40" y="410" width="360" height="270" fill="#f8f5ec" stroke="#16201a" stroke-width="3"/>
+    <rect x="40" y="410" width="360" height="34" fill="#16201a"/>
+    <rect x="40" y="410" width="46" height="34" fill="#c6e03a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.4;0.41;0.59;0.6;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="63" y="433" text-anchor="middle" class="b" font-size="15" fill="#b4491f">03</text>
+    <text x="63" y="433" text-anchor="middle" class="b" font-size="15" fill="#16201a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.4;0.41;0.59;0.6;1" dur="16s" repeatCount="indefinite"/>03</text>
+    <text x="98" y="433" class="b" font-size="14" fill="#c6e03a" letter-spacing="1.5">CLEAN - AI VERIFIES</text>
+    <rect x="37" y="407" width="366" height="276" fill="none" stroke="#c6e03a" stroke-width="5"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.4;0.41;0.59;0.6;1" dur="16s" repeatCount="indefinite"/></rect>
+  </g>
+
+  <g class="m" fill="#16201a">
+    <text x="60" y="468" font-size="10" font-weight="700" fill="#2f4a38">BEFORE</text>
+    <rect x="60" y="474" width="150" height="110" fill="#d9d2bf" stroke="#16201a" stroke-width="2"/>
+    <g transform="translate(75 490) scale(1)">
+      <ellipse cx="60" cy="78" rx="58" ry="10" fill="#b9b19c"/>
+      <path d="M8 76 Q20 40 46 46 Q60 22 82 40 Q108 38 112 76 Z" fill="#8c8473"/>
+      <rect x="24" y="44" width="16" height="30" rx="4" fill="#7fb3c9" transform="rotate(-25 32 60)"/>
+      <rect x="70" y="50" width="24" height="18" fill="#c89a5b" transform="rotate(12 82 59)"/>
+      <rect x="52" y="34" width="14" height="20" rx="2" fill="#9aa5ae"/>
+      <path d="M86 70 q10 -16 22 -4" stroke="#d8c23a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <circle cx="44" cy="66" r="6" fill="#8a5fb0"/>
+    </g>
+    <text x="232" y="468" font-size="10" font-weight="700" fill="#2f4a38"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.42;0.44;0.96;1" dur="16s" repeatCount="indefinite"/>AFTER</text>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.42;0.44;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="232" y="474" width="150" height="110" fill="#d9d2bf" stroke="#16201a" stroke-width="2"/>
+      <ellipse cx="307" cy="568" rx="58" ry="8" fill="#cbc3ad"/>
+      <rect x="232" y="474" width="150" height="3" fill="#c6e03a">
+        <animate attributeName="y" values="474;474;581;581" keyTimes="0;0.44;0.48;1" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.44;0.45;0.47;0.48;1" dur="16s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.49;0.51;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <g transform="rotate(-8 307 529)">
+        <rect x="247" y="506" width="120" height="46" fill="none" stroke="#2f4a38" stroke-width="3"/>
+        <text x="307" y="526" text-anchor="middle" class="d" font-size="17" fill="#2f4a38">AI VERIFIED</text>
+        <text x="307" y="543" text-anchor="middle" font-size="9" font-weight="700" fill="#2f4a38">0 ITEMS LEFT</text>
+      </g>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.52;0.54;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="60" y="604" width="90" height="24" fill="#b4491f"/><text x="105" y="621" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" text-decoration="line-through">OPEN</text>
+      <text x="166" y="621" font-size="14" font-weight="700">-&gt;</text>
+      <rect x="196" y="604" width="110" height="24" fill="#c6e03a" stroke="#16201a" stroke-width="2"/><text x="251" y="621" text-anchor="middle" font-size="12" font-weight="700">RESOLVED</text>
+      <text x="60" y="654" font-size="10" fill="#2f4a38">waste still visible? closing is rejected</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="426" y="416" width="360" height="270" fill="#16201a"/>
+    <rect x="420" y="410" width="360" height="270" fill="#f8f5ec" stroke="#16201a" stroke-width="3"/>
+    <rect x="420" y="410" width="360" height="34" fill="#16201a"/>
+    <rect x="420" y="410" width="46" height="34" fill="#c6e03a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.6;0.61;0.79;0.8;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="443" y="433" text-anchor="middle" class="b" font-size="15" fill="#b4491f">04</text>
+    <text x="443" y="433" text-anchor="middle" class="b" font-size="15" fill="#16201a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.6;0.61;0.79;0.8;1" dur="16s" repeatCount="indefinite"/>04</text>
+    <text x="478" y="433" class="b" font-size="14" fill="#c6e03a" letter-spacing="1.5">SELL - COLLECTOR PICKS UP</text>
+    <rect x="417" y="407" width="366" height="276" fill="none" stroke="#c6e03a" stroke-width="5"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.6;0.61;0.79;0.8;1" dur="16s" repeatCount="indefinite"/></rect>
+  </g>
+
+  <g class="m" fill="#16201a">
+    <!-- house -->
+    <path d="M444 548 L494 506 L544 548 V600 H444 Z" fill="#e3d9c2" stroke="#16201a" stroke-width="2"/><rect x="482" y="566" width="22" height="34" fill="#2f4a38"/>
+    <!-- bag -->
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.61;0.63;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <path d="M560 548 q-6 52 8 54 h52 q14 -2 8 -54 Z" fill="#7fb3c9" stroke="#16201a" stroke-width="2"/>
+      <path d="M572 548 q22 -18 44 0" fill="none" stroke="#16201a" stroke-width="3"/>
+      <text x="594" y="584" text-anchor="middle" font-size="10" font-weight="700">4.2 KG</text>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.64;0.66;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="640" y="460" width="122" height="54" fill="#c6e03a" stroke="#16201a" stroke-width="2"/>
+      <text x="650" y="478" font-size="9" font-weight="700">AI ESTIMATE</text>
+      <text x="650" y="504" class="d" font-size="24">$3.80</text>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.67;0.69;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <text x="440" y="476" font-size="9" fill="#2f4a38">PLASTIC 55% . METAL 30%</text>
+      <text x="440" y="490" font-size="9" fill="#2f4a38">PAPER 15% . phone ****456</text>
+    </g>
+    <!-- truck -->
+    <g clip-path="url(#p4)"><g><animateTransform attributeName="transform" type="translate" values="160 0;160 0;0 0;0 0;160 0" keyTimes="0;0.68;0.74;0.96;1" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.68;0.685;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="640" y="552" width="70" height="40" fill="#2f4a38" stroke="#16201a" stroke-width="2"/>
+      <path d="M710 562 h26 l14 16 v14 h-40 Z" fill="#c6e03a" stroke="#16201a" stroke-width="2"/>
+      <circle cx="660" cy="596" r="9" fill="#16201a"/><circle cx="730" cy="596" r="9" fill="#16201a"/>
+      <text x="675" y="576" text-anchor="middle" font-size="9" font-weight="700" fill="#c6e03a">COLLECT</text>
+    </g></g>
+    <rect x="430" y="606" width="340" height="3" fill="#16201a"/>
+    <g font-size="10" font-weight="700">
+      <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.7;0.72;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="440" y="624" width="90" height="22" fill="#fff" stroke="#16201a" stroke-width="2"/><text x="485" y="639" text-anchor="middle">REQUESTED</text></g>
+      <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.73;0.75;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="540" y="624" width="90" height="22" fill="#fff" stroke="#16201a" stroke-width="2"/><text x="585" y="639" text-anchor="middle">ACCEPTED</text></g>
+      <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.76;0.78;0.96;1" dur="16s" repeatCount="indefinite"/><rect x="640" y="624" width="120" height="22" fill="#c6e03a" stroke="#16201a" stroke-width="2"/><text x="700" y="639" text-anchor="middle">COLLECTED $3.80</text></g>
+    </g>
+  </g>
+
+  <g>
+    <rect x="806" y="416" width="360" height="270" fill="#16201a"/>
+    <rect x="800" y="410" width="360" height="270" fill="#f8f5ec" stroke="#16201a" stroke-width="3"/>
+    <rect x="800" y="410" width="360" height="34" fill="#16201a"/>
+    <rect x="800" y="410" width="46" height="34" fill="#c6e03a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.8;0.81;0.95;0.96;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="823" y="433" text-anchor="middle" class="b" font-size="15" fill="#b4491f">05</text>
+    <text x="823" y="433" text-anchor="middle" class="b" font-size="15" fill="#16201a"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.8;0.81;0.95;0.96;1" dur="16s" repeatCount="indefinite"/>05</text>
+    <text x="858" y="433" class="b" font-size="14" fill="#c6e03a" letter-spacing="1.5">IMPACT - CITY DASHBOARD</text>
+    <rect x="797" y="407" width="366" height="276" fill="none" stroke="#c6e03a" stroke-width="5"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.8;0.81;0.95;0.96;1" dur="16s" repeatCount="indefinite"/></rect>
+  </g>
+
+  <g class="m" fill="#16201a">
+    <rect x="820" y="608" width="170" height="2" fill="#16201a"/>
+    <g transform="translate(826 608)"><rect x="0" y="-92" width="20" height="92" fill="#c2412d"><animateTransform attributeName="transform" type="scale" values="1 0;1 0;1 1;1 1;1 0" keyTimes="0;0.81;0.84;0.96;1" dur="16s" repeatCount="indefinite"/></rect></g>
+    <g transform="translate(853 608)"><rect x="0" y="-70" width="20" height="70" fill="#8a5fb0"><animateTransform attributeName="transform" type="scale" values="1 0;1 0;1 1;1 1;1 0" keyTimes="0;0.822;0.852;0.96;1" dur="16s" repeatCount="indefinite"/></rect></g>
+    <g transform="translate(880 608)"><rect x="0" y="-58" width="20" height="58" fill="#a8742f"><animateTransform attributeName="transform" type="scale" values="1 0;1 0;1 1;1 1;1 0" keyTimes="0;0.834;0.864;0.96;1" dur="16s" repeatCount="indefinite"/></rect></g>
+    <g transform="translate(907 608)"><rect x="0" y="-44" width="20" height="44" fill="#5b6b7a"><animateTransform attributeName="transform" type="scale" values="1 0;1 0;1 1;1 1;1 0" keyTimes="0;0.846;0.876;0.96;1" dur="16s" repeatCount="indefinite"/></rect></g>
+    <g transform="translate(934 608)"><rect x="0" y="-80" width="20" height="80" fill="#4d8f2a"><animateTransform attributeName="transform" type="scale" values="1 0;1 0;1 1;1 1;1 0" keyTimes="0;0.858;0.888;0.96;1" dur="16s" repeatCount="indefinite"/></rect></g>
+    <g transform="translate(961 608)"><rect x="0" y="-30" width="20" height="30" fill="#1f8f8a"><animateTransform attributeName="transform" type="scale" values="1 0;1 0;1 1;1 1;1 0" keyTimes="0;0.87;0.9;0.96;1" dur="16s" repeatCount="indefinite"/></rect></g>
+    <text x="820" y="626" font-size="9" fill="#2f4a38">KG BY CLASS . 7 DAYS</text>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.86;0.88;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <text x="1008" y="476" font-size="9" font-weight="700" fill="#2f4a38">CO&#8322;e AVOIDED</text>
+      <text x="1008" y="510" class="d" font-size="34">612 KG</text>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.88;0.9;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <text x="1008" y="538" font-size="9" font-weight="700" fill="#2f4a38">= CAR KM NOT DRIVEN</text>
+      <text x="1008" y="562" class="d" font-size="24">3,060</text>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.9;0.92;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <text x="1008" y="588" font-size="9" font-weight="700" fill="#2f4a38">SPOTS CLEANED</text>
+      <text x="1008" y="610" class="d" font-size="24">41 <tspan class="m" font-size="10" font-weight="400" fill="#2f4a38">avg 19 h</tspan></text>
+    </g>
+    <g><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.92;0.94;0.96;1" dur="16s" repeatCount="indefinite"/>
+      <rect x="820" y="638" width="320" height="26" fill="#16201a"/>
+      <text x="980" y="656" text-anchor="middle" font-size="11" font-weight="700" fill="#c6e03a" letter-spacing="1">EVERY PHOTO BECOMES DATA</text>
+    </g>
+  </g>
+</svg>

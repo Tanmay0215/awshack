@@ -2,7 +2,7 @@
 
 This document describes how Sortline (waste detection plus a segregation-facility dashboard) runs on AWS: what each service does, how requests flow, and where the sharp edges are. Names match `infra/template.yaml` (stack name default: `waste-detect`).
 
-> **Status: deployed and verified live** at https://sortline.dsabuddy.com (Elastic IP `13.55.1.7`, stack `waste-detect`, ap-southeast-2). Verified on the real deployment: `/health`, `/detect`, persistence to S3 and DynamoDB, presigned image URLs (via the regional S3 endpoint), and a Let's Encrypt certificate issued by Caddy while the DNS record was Cloudflare-proxied. The design replaced an earlier CloudFront + Lambda + ALB version.
+> **Status: deployed and verified live** at https://pixelapp.tech (Elastic IP `13.55.1.7`, stack `waste-detect`, ap-southeast-2). Verified on the real deployment: `/health`, `/detect`, persistence to S3 and DynamoDB, presigned image URLs (via the regional S3 endpoint), and a Let's Encrypt certificate issued by Caddy. DNS is served by Route 53 (`infra/dns.yaml`). The design replaced an earlier CloudFront + Lambda + ALB version.
 >
 > **Not verified:** the API has no authentication; the site is not load tested; live mode (`/live`) was not tested with a real webcam in a browser (server side and the OpenCV script were tested; see `backend/LIVE.md`).
 
@@ -19,7 +19,7 @@ Everything lives in one Region: **ap-southeast-2** (`REGION` in `infra/scripts/e
 ```mermaid
 flowchart LR
     B[Browser]
-    DNS[(DNS A record<br/>sortline.dsabuddy.com<br/>managed outside AWS)]
+    DNS[(Route 53 hosted zone<br/>pixelapp.tech A / www A<br/>stack waste-detect-dns)]
     LE[(Let's Encrypt<br/>external, ACME)]
     DH[(Docker Hub<br/>sortline-web, waste-detect-api<br/>external, public)]
     subgraph "ap-southeast-2"
@@ -50,7 +50,7 @@ flowchart LR
 ```
 
 ```
-          Browser --(DNS A record)--> sortline.dsabuddy.com --> ElasticIp
+          Browser --(Route 53 A record)--> pixelapp.tech --> ElasticIp
                                                                   |
                                           :80/:443 (+udp 443)     |   Ec2Sg: 80, 443 tcp, 443 udp from 0.0.0.0/0
                        +------------------------------------------v-------------------------+
@@ -83,13 +83,13 @@ flowchart LR
 | IAM | `InstanceRole` (SSM core + inline `ModelRead`, `ContainerLogs` and `ScanStorage`) | Least privilege: read `ModelBucket`; put/get objects in `ResultsBucket`; PutItem/GetItem/Query/BatchWriteItem/DeleteItem on `ScansTable`. |
 | SSM | `AmazonSSMManagedInstanceCore`; AMI via `{{resolve:ssm:...al2023...}}` | Shell-less access (restart containers, run commands) with no SSH key. Also resolves the latest AL2023 AMI at deploy time. |
 | CloudWatch Logs | `ApiLogGroup` (`/sortline/api`), `WebLogGroup` (`/sortline/web`) | Both containers use the Docker `awslogs` log driver (streams `api` and `web`). Retention 14 days. The instance role's `ContainerLogs` policy allows `logs:CreateLogStream` and `logs:PutLogEvents` on these two groups only. |
-| DNS (outside AWS) | A record for `DomainName` | Managed at the domain provider (Cloudflare; not Route 53 in this stack). Must point at the `ElasticIp` output. Currently Cloudflare-proxied and working. |
+| Route 53 (separate stack `waste-detect-dns`, `infra/dns.yaml`) | `Zone`, `ApexA`, `WwwA`, mail/verification records | Public hosted zone for `DomainName` (retained on delete). A records for apex and `www` point at the `ElasticIp` output; MX/TXT records copied from the registrar keep SES mail and Google verification working. Simple routing only. The registrar's name servers must be set to the zone's `NameServers` output. |
 
 ## Request flows
 
 ### Page load
 
-1. The browser resolves `sortline.dsabuddy.com` to the Elastic IP and connects to Caddy on 443 (HTTP on 80 is redirected to HTTPS).
+1. The browser resolves `pixelapp.tech` (Route 53) to the Elastic IP and connects to Caddy on 443 (HTTP on 80 is redirected to HTTPS).
 2. Caddy serves the static export from `/srv`: `/` (scanner), `/dashboard/` and `/live/`. Files under `/_next/static/*` get `Cache-Control: public, max-age=31536000, immutable`.
 3. The page calls `GET /api/health` to show backend status; the dashboard polls `/api/stats` and `/api/scans` every 10 s.
 
@@ -131,7 +131,7 @@ The production-line concept (`line-1` to `line-3`) was removed from the UI. The 
 
 - **Single instance, no HA.** One EC2 instance; instance loss or an AZ outage means downtime. `--restart always` covers container crashes and reboots only.
 - **Serialized inference.** A `threading.Lock` guards the model (ultralytics predictors are not thread-safe), so concurrent `/detect` requests queue; `/detect-frame` returns 429 instead.
-- **Certificate depends on DNS.** Caddy can obtain a certificate only after the A record for `DomainName` points at the Elastic IP and ports 80/443 are reachable. Until then HTTPS fails. The current Cloudflare-proxied record worked and the certificate was issued; if issuance ever fails behind the proxy, switch the record to "DNS only" until the certificate exists.
+- **Certificate depends on DNS.** Caddy can obtain a certificate only after `DomainName` resolves (via Route 53) to the Elastic IP and ports 80/443 are reachable. Until then HTTPS fails.
 - **Let's Encrypt rate limits.** Repeatedly recreating the `caddy_data` volume re-requests certificates and can hit rate limits. Keep the volume.
 - **Updates are manual.** User data runs only on first boot. After the stack is updated, or when you push new images, run `infra/scripts/update-instance.sh` to pull and recreate the containers.
 - **EC2 in a public subnet** with an Elastic IP (no NAT). Protected by `Ec2Sg`; a private subnet plus a load balancer would be stronger but costs more.
@@ -160,13 +160,13 @@ There is no load balancer, CloudFront or Lambda in this design, which removes th
 
 ## Teardown
 
-Run `infra/scripts/destroy.sh`. It empties `ModelBucket` and `ResultsBucket` (all object versions), deletes the stack (including `ScansTable` and the Elastic IP), and waits for completion. Stale buckets `waste-detect-sitebucket-*` and `waste-detect-cfn-artifacts-*` from earlier designs are not part of the stack; delete them manually. Remove the DNS A record yourself. See `deploy.md` section "Clean up".
+Run `infra/scripts/destroy.sh`. It empties `ModelBucket` and `ResultsBucket` (all object versions), deletes the stack (including `ScansTable` and the Elastic IP), and waits for completion. Stale buckets `waste-detect-sitebucket-*` and `waste-detect-cfn-artifacts-*` from earlier designs are not part of the stack; delete them manually. The DNS stack (`waste-detect-dns`) is not touched; it holds mail records too. See `deploy.md` section "Clean up".
 
 ## Stack outputs
 
 | Output | Used for |
 |---|---|
-| `ElasticIp` | Value for the DNS A record |
+| `ElasticIp` | Value for the Route 53 A records (`deploy-dns.sh` reads it) |
 | `SiteUrl` | `https://<DomainName>` |
 | `InstanceId` | SSM commands (`update-instance.sh`) |
 | `ModelBucketName` | `upload-model.sh` target |
@@ -191,5 +191,5 @@ aws logs tail /sortline/web --follow --region ap-southeast-2
 | `InstanceType` | `c7i-flex.large` | 4 GB, free-plan eligible. Override with `./deploy.sh InstanceType=<type>` |
 | `ImageUri` | `docker.io/tanman0215/waste-detect-api:latest` | API image pulled at first boot |
 | `WebImageUri` | `docker.io/tanman0215/sortline-web:latest` | Caddy + Next.js image pulled at first boot |
-| `DomainName` | `sortline.dsabuddy.com` | Passed to Caddy as `SITE_ADDRESS`; must resolve to `ElasticIp` |
+| `DomainName` | `pixelapp.tech` | Passed to Caddy as `SITE_ADDRESS`; resolved by the Route 53 zone in `dns.yaml` |
 | `ModelKey` | `models/best.pt` | S3 key in `ModelBucket` |

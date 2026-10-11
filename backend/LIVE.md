@@ -17,7 +17,7 @@ Weights come from `MODEL_PATH` (default `model/weights/best.pt`).
 The page opens the webcam (`getUserMedia`, rear camera preferred on phones), downscales each frame to max 480 px JPEG and POSTs it to `/api/detect-frame`
 (imgsz 416). Only after the response arrives does it grab the next frame (no overlapping requests). The server replies with boxes only
 (no annotated image, nothing saved to S3/DynamoDB) and the page draws them on a canvas over the video. If the model lock is busy the server
-returns 429 immediately and the page waits 150 ms. Requires HTTPS or localhost (prod: https://sortline.dsabuddy.com is fine).
+returns 429 immediately and the page waits 150 ms. Requires HTTPS or localhost (prod: https://pixelapp.tech is fine).
 
 ## Measured (Apple M4 Mac, CPU, 640x480 test clip, 90 frames; not the prod box)
 | imgsz | YOLO ms | live.py effective FPS | /detect-frame inference_ms (480x360 JPEG) |

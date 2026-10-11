@@ -16,7 +16,7 @@ Parameters:
   DomainName:
     Type: String
     Default: pixelapp.tech
-    Description: Public hostname; point its DNS A record at the ElasticIp output.
+    Description: Public hostname; Route 53 records for it live in dns.yaml (deploy-dns.sh).
   ModelKey:
     Type: String
     Default: models/best.pt
